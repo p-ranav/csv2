@@ -13,13 +13,38 @@ namespace csv2 {
 using namespace std;
 
 class reader {
+    char delimiter_{','};
     task_system t_{1};
     std::vector<std::string> header_;
     size_t current_row_{0};
-    friend class iterator;
+
+    std::optional<std::unordered_map<std::string_view, std::string>>
+    try_read_row(size_t index) {
+        const auto it = t_.find_row(index + 1); // index = 0 is the header
+        if (it != t_.rows_.end()) {
+            const auto row = tokenize_row(it->second);
+            std::unordered_map<std::string_view, std::string> result;
+            for (size_t i = 0; i < header_.size(); ++i) {
+                if (i <= row.size())
+                  result.insert({header_[i], row[i]});
+                else 
+                  result.insert({header_[i], ""});
+            }
+            {
+                // For the last key-value pair, rtrim to remove \n or \r\n
+                const size_t i = header_.size() - 1;
+                if (i <= row.size())
+                  result.insert({header_[i], rtrim_copy(row[i])});
+                else 
+                  result.insert({header_[i], ""});
+            }
+            return result;
+        }
+        return std::nullopt;
+    }
 
 public:
-    reader(std::string filename) {
+    reader(std::string filename, char delimiter = ','): delimiter_(delimiter) {
         t_.start();
         ifstream infile(filename);
         unsigned line_no = 1;
@@ -110,14 +135,14 @@ public:
         for (char c : row) {
             switch (state) {
                 case CSVState::UnquotedField:
-                    switch (c) {
-                        case ',': // end of field
-                                fields.push_back(""); i++;
-                                break;
-                        case '"': state = CSVState::QuotedField;
-                                break;
-                        default:  fields[i].push_back(c);
-                                break; }
+                    if (c == delimiter_) {
+                        fields.push_back(""); 
+                        i++;
+                    } else if (c == '"') {
+                        state = CSVState::QuotedField;
+                    } else {
+                        fields[i].push_back(c);
+                    }
                     break;
                 case CSVState::QuotedField:
                     switch (c) {
@@ -128,19 +153,19 @@ public:
                     break;
                 case CSVState::QuotedQuote:
                     switch (c) {
-                        case ',': // , after closing quote
-                                fields.push_back(""); i++;
-                                state = CSVState::UnquotedField;
-                                break;
-                        case '"': // "" -> "
-                                fields[i].push_back('"');
-                                state = CSVState::QuotedField;
-                                break;
-                        default:  // end of quote
-                                state = CSVState::UnquotedField;
-                                break; }
+                        if (c == delimiter_) { // , after closing quote
+                            fields.push_back(""); 
+                            i++;
+                            state = CSVState::UnquotedField;
+                        } else if (c == '"') { // "" -> "
+                            fields[i].push_back('"');
+                            state = CSVState::QuotedField;
+                        } else {
+                            state = CSVState::UnquotedField;
+                        }
                     break;
             }
+        }
         }
         return fields;
     }
@@ -150,36 +175,26 @@ public:
             return false;
         std::optional<std::unordered_map<std::string_view, std::string>> row;
         do {
-          row = operator[](current_row_);
+          row = try_read_row(current_row_);
         } while(!row.has_value());
         current_row_ += 1;
         result = row.value();
         return true;
     }
 
-    std::optional<std::unordered_map<std::string_view, std::string>>
-    operator[](size_t index) {
-        const auto it = t_.rows_.find(index + 1); // index = 0 is the header
-        if (it != t_.rows_.end()) {
-            const auto row = tokenize_row(it->second);
-            std::unordered_map<std::string_view, std::string> result;
-            for (size_t i = 0; i < header_.size(); ++i) {
-                if (i <= row.size())
-                  result.insert({header_[i], row[i]});
-                else 
-                  result.insert({header_[i], ""});
-            }
-            {
-                // For the last key-value pair, rtrim to remove \n or \r\n
-                const size_t i = header_.size() - 1;
-                if (i <= row.size())
-                  result.insert({header_[i], rtrim_copy(row[i])});
-                else 
-                  result.insert({header_[i], ""});
-            }
-            return result;
-        }
-        return std::nullopt;
+    size_t rows() {
+        return t_.rows();
+    }
+
+    size_t cols() {
+        return header_.size();
+    }
+
+    auto header() const {
+        std::vector<std::string_view> result;
+        for (auto& h: header_)
+            result.push_back(h);
+        return result;
     }
 };
 

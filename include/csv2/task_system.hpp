@@ -64,6 +64,16 @@ public:
     no_more_tasks_ = true;
   }
 
+  auto find_row(size_t index) {
+    lock_t lock(rows_mutex_);
+    return rows_.find(index);
+  }
+
+  size_t rows() {
+    lock_t lock(rows_mutex_);
+    return rows_.size();
+  }
+
   template <typename F> void async_(F &&f) {
     const auto i = index_++;
     for (unsigned n = 0; n != count_; ++n) {
