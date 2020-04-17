@@ -135,7 +135,10 @@ class reader {
     try_read_row(row_t &result) {
         if (current_row_index_ < lines_) {
             result.clear();
-            row_ = std::move(tokenize_row(t_.rows_.at(current_row_index_)));
+            std::string row_string;
+            if (!t_.rows_.try_dequeue(row_string)) 
+                return false;
+            row_ = tokenize_row(row_string);
             for (size_t i = 0; i < header_.size(); ++i) {
                 rtrim(row_[i]);
                 if (i < row_.size()) {
@@ -170,18 +173,18 @@ public:
     }
 
     bool read_row(row_t &result) {
-        if (current_row_index_ == t_.rows())
+        if (current_row_index_ == lines_)
             return false;
         while (!try_read_row(result)) {}
         current_row_index_ += 1;
         return true;
     }
 
-    size_t rows() {
-        return t_.rows();
+    size_t rows() const {
+        return lines_;
     }
 
-    size_t cols() {
+    size_t cols() const {
         return header_.size();
     }
 

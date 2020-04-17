@@ -20,7 +20,7 @@ class task_system {
   std::atomic<unsigned> index_{0};
   std::atomic_bool no_more_tasks_{false};
   std::mutex rows_mutex_;
-  std::vector<std::string> rows_;
+  moodycamel::ConcurrentQueue<std::string> rows_;
 
   friend class reader;
 
@@ -36,8 +36,8 @@ class task_system {
       }
 
       {
-        lock_t lock(rows_mutex_);
-        rows_.push_back(op.value().second);
+        // lock_t lock(rows_mutex_);
+        rows_.enqueue(op.value().second);
       }
     }
   }
@@ -62,11 +62,6 @@ public:
 
   void stop() {
     no_more_tasks_ = true;
-  }
-
-  size_t rows() {
-    lock_t lock(rows_mutex_);
-    return rows_.size();
   }
 
   template <typename F> void async_(F &&f) {
