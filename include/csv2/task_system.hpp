@@ -19,6 +19,8 @@ class task_system {
   std::atomic_bool no_more_tasks_{false};
   std::unordered_map<unsigned, std::string> rows_;
 
+  friend class reader;
+
   void run(unsigned i) {
     while (true) {
       std::optional<record_t> op;
@@ -44,7 +46,7 @@ public:
     for (auto &thread: threads_)
       thread.join();
     // for (auto& [k,v]: rows_)
-    //   std::cout << k << ": " << v << "\n";
+    //   std::cout << k << ": " << v;
     // std::cout << rows_.size() << std::endl;
   }
 
