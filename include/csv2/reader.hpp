@@ -8,6 +8,8 @@
 #include <string_view>
 #include <csv2/string_utils.hpp>
 #include <cstring>
+#include <csv2/setting.hpp>
+#include <tuple>
 
 namespace csv2 {
 
@@ -15,8 +17,6 @@ using namespace std;
 using row_t = std::unordered_map<std::string_view, std::string_view>;
 
 class reader {
-    const char delimiter_{','};
-    const std::vector<char> trim_{'\n', '\r'};
     task_system t_{1};
     size_t lines_{0};
     std::vector<std::string> header_;
@@ -24,6 +24,20 @@ class reader {
     std::string empty_{""};
     std::string current_row_;
     size_t current_row_index_{0};
+
+    using Settings = std::tuple<option::Filename, option::Delimiter, option::TrimCharacters>;
+    Settings settings_;
+
+    template <details::CsvOption id>
+    auto get_value() -> decltype((details::get_value<id>(std::declval<Settings &>()).value)) {
+        return details::get_value<id>(settings_).value;
+    }
+
+    template <details::CsvOption id>
+    auto get_value() const
+        -> decltype((details::get_value<id>(std::declval<const Settings &>()).value)) {
+        return details::get_value<id>(settings_).value;
+    }
 
     template <typename LineHandler>
     void read_file_fast(ifstream &file, LineHandler &&line_handler){
@@ -94,6 +108,7 @@ class reader {
     };
 
     std::vector<std::string_view> tokenize_current_row() {
+        auto& delimiter = get_value<details::CsvOption::delimiter>();
         CSVState state = CSVState::UnquotedField;
         std::vector<std::string_view> fields;
         size_t i = 0; // index of the current field
@@ -105,7 +120,7 @@ class reader {
             char c = current_row_[j];
             switch (state) {
                 case CSVState::UnquotedField:
-                    if (c == delimiter_) {
+                    if (c == delimiter) {
                         fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
                         field_start = field_end + 1; // start after delimiter
                         field_end = field_start; // reset interval
@@ -132,7 +147,7 @@ class reader {
                     }
                     break;
                 case CSVState::QuotedQuote:
-                    if (c == delimiter_) { // , after closing quote
+                    if (c == delimiter) { // , after closing quote
                         fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
                         field_start = field_end + 1; // start after delimiter
                         field_end = field_start; // reset interval
@@ -175,14 +190,25 @@ class reader {
     }
 
 public:
-    reader(std::string filename, char delimiter = ','): delimiter_(delimiter) {
+    template <typename... Args,
+            typename std::enable_if<details::are_settings_from_tuple<
+                                        Settings, typename std::decay<Args>::type...>::value,
+                                    void *>::type = nullptr>
+    reader(Args &&... args)
+        : settings_(
+            details::get<details::CsvOption::filename>(option::Filename{""}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::delimiter>(option::Delimiter{','}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::trim_characters>(option::TrimCharacters{'\n', '\r'}, std::forward<Args>(args)...)
+        ) {
+        auto& filename = get_value<details::CsvOption::filename>();
+        auto& trim_characters = get_value<details::CsvOption::trim_characters>();
         t_.start();
         ifstream infile(filename);
         unsigned line_no = 1;
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
             current_row_ = std::string{buffer, static_cast<size_t>(length)};
-            rtrim(current_row_, trim_);
+            rtrim(current_row_, trim_characters);
             if (!header_.size()) {
               const auto header_tokens = tokenize_current_row();
               header_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
@@ -192,7 +218,6 @@ public:
             t_.async_(std::make_pair(line_no++, std::move(current_row_)));
         });
         t_.stop();
-        std::cout << "Parsed " << lines_ << " lines\n";
     }
 
     bool read_row(row_t &result) {
