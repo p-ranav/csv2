@@ -68,7 +68,8 @@ struct disjunction<Op, TailOps...>
 enum class CsvOption {
   filename = 0,
   delimiter,
-  trim_characters
+  trim_characters,
+  ignore_columns
 };
 
 template <typename T, CsvOption Id> struct Setting {
@@ -166,5 +167,6 @@ namespace option {
 using Filename = details::StringSetting<details::CsvOption::filename>;
 using Delimiter = details::CharSetting<details::CsvOption::delimiter>;
 using TrimCharacters = details::Setting<std::vector<char>, details::CsvOption::trim_characters>;
+using IgnoreColumns = details::Setting<std::vector<std::string>, details::CsvOption::ignore_columns>;
 } // namespace option
 } // namespace csv2

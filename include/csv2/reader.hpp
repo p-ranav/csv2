@@ -25,7 +25,10 @@ class reader {
     std::string current_row_;
     size_t current_row_index_{0};
 
-    using Settings = std::tuple<option::Filename, option::Delimiter, option::TrimCharacters>;
+    using Settings = std::tuple<option::Filename, 
+        option::Delimiter, 
+        option::TrimCharacters,
+        option::IgnoreColumns>;
     Settings settings_;
 
     template <details::CsvOption id>
@@ -169,6 +172,7 @@ class reader {
 
     bool
     try_read_row(row_t &result) {
+        auto& ignore_columns = get_value<details::CsvOption::ignore_columns>();
         if (current_row_index_ < lines_) {
             if (!t_.rows_.try_dequeue(current_row_)) 
                 return false;
@@ -176,6 +180,8 @@ class reader {
 
             result.clear();
             for (size_t i = 0; i < header_.size(); ++i) {
+                if (std::find(ignore_columns.begin(), ignore_columns.end(), header_[i]) != ignore_columns.end())
+                    continue;
                 // rtrim(row_[i]);
                 if (i < row_.size()) {
                   result.insert({header_[i], row_[i]});
@@ -198,7 +204,8 @@ public:
         : settings_(
             details::get<details::CsvOption::filename>(option::Filename{""}, std::forward<Args>(args)...),
             details::get<details::CsvOption::delimiter>(option::Delimiter{','}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::trim_characters>(option::TrimCharacters{'\n', '\r'}, std::forward<Args>(args)...)
+            details::get<details::CsvOption::trim_characters>(option::TrimCharacters{}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{}, std::forward<Args>(args)...)
         ) {
         auto& filename = get_value<details::CsvOption::filename>();
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
@@ -233,7 +240,7 @@ public:
     }
 
     size_t cols() const {
-        return header_.size();
+        return header_.size() - get_value<details::CsvOption::ignore_columns>().size();
     }
 
     auto header() const {
