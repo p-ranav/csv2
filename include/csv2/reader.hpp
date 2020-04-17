@@ -141,6 +141,7 @@ class reader {
                         state = CSVState::UnquotedField;
                     } else if (c == '"') { // "" -> "
                         // fields[i].push_back('"');
+                        field_end += 1;
                         state = CSVState::QuotedField;
                     } else {
                         field_end += 1;
