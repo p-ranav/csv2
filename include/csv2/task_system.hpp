@@ -11,12 +11,15 @@
 
 namespace csv2 {
 
+using lock_t = std::unique_lock<std::mutex>;
+
 class task_system {
   const unsigned count_;
   std::vector<std::thread> threads_;
   std::vector<notification_queue> queue_{count_};
   std::atomic<unsigned> index_{0};
   std::atomic_bool no_more_tasks_{false};
+  std::mutex rows_mutex_;
   std::unordered_map<unsigned, std::string> rows_;
 
   friend class reader;
@@ -33,6 +36,7 @@ class task_system {
       }
 
       {
+        lock_t lock(rows_mutex_);
         rows_.insert(op.value());
       }
     }

@@ -6,47 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string_view>
-
-#include <cctype>
-#include <locale>
-
-// trim from start (in place)
-static inline void ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-        return !std::isspace(ch);
-    }));
-}
-
-// trim from end (in place)
-static inline void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
-}
-
-// trim from both ends (in place)
-static inline void trim(std::string &s) {
-    ltrim(s);
-    rtrim(s);
-}
-
-// trim from start (copying)
-static inline std::string ltrim_copy(std::string s) {
-    ltrim(s);
-    return s;
-}
-
-// trim from end (copying)
-static inline std::string rtrim_copy(std::string s) {
-    rtrim(s);
-    return s;
-}
-
-// trim from both ends (copying)
-static inline std::string trim_copy(std::string s) {
-    trim(s);
-    return s;
-}
+#include <csv2/string_utils.hpp>
 
 namespace csv2 {
 
@@ -55,6 +15,9 @@ using namespace std;
 class reader {
     task_system t_{1};
     std::vector<std::string> header_;
+    size_t current_row_{0};
+    friend class iterator;
+
 public:
     reader(std::string filename) {
         t_.start();
@@ -63,7 +26,7 @@ public:
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
             if (!header_.size()) {
-              header_ = read_csv_row(std::string(buffer, length));
+              header_ = tokenize_row(std::string(buffer, length));
               rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
               return;
             }
@@ -140,7 +103,7 @@ public:
         QuotedQuote
     };
 
-    std::vector<std::string> read_csv_row(const std::string &row) {
+    std::vector<std::string> tokenize_row(const std::string &row) {
         CSVState state = CSVState::UnquotedField;
         std::vector<std::string> fields {""};
         size_t i = 0; // index of the current field
@@ -182,11 +145,23 @@ public:
         return fields;
     }
 
+    bool read_row(std::unordered_map<std::string_view, std::string> &result) {
+        if (current_row_ == t_.rows_.size())
+            return false;
+        std::optional<std::unordered_map<std::string_view, std::string>> row;
+        do {
+          row = operator[](current_row_);
+        } while(!row.has_value());
+        current_row_ += 1;
+        result = row.value();
+        return true;
+    }
+
     std::optional<std::unordered_map<std::string_view, std::string>>
     operator[](size_t index) {
-        auto it = t_.rows_.find(index);
+        const auto it = t_.rows_.find(index + 1); // index = 0 is the header
         if (it != t_.rows_.end()) {
-            auto row = read_csv_row(it->second);
+            const auto row = tokenize_row(it->second);
             std::unordered_map<std::string_view, std::string> result;
             for (size_t i = 0; i < header_.size(); ++i) {
                 if (i <= row.size())
@@ -206,7 +181,6 @@ public:
         }
         return std::nullopt;
     }
-
 };
 
 }
