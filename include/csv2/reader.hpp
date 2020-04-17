@@ -18,48 +18,6 @@ class reader {
     std::vector<std::string> header_;
     size_t current_row_{0};
 
-    std::optional<std::unordered_map<std::string_view, std::string>>
-    try_read_row(size_t index) {
-        const auto it = t_.find_row(index + 1); // index = 0 is the header
-        if (it != t_.rows_.end()) {
-            const auto row = tokenize_row(it->second);
-            std::unordered_map<std::string_view, std::string> result;
-            for (size_t i = 0; i < header_.size(); ++i) {
-                if (i <= row.size())
-                  result.insert({header_[i], row[i]});
-                else 
-                  result.insert({header_[i], ""});
-            }
-            {
-                // For the last key-value pair, rtrim to remove \n or \r\n
-                const size_t i = header_.size() - 1;
-                if (i <= row.size())
-                  result.insert({header_[i], rtrim_copy(row[i])});
-                else 
-                  result.insert({header_[i], ""});
-            }
-            return result;
-        }
-        return std::nullopt;
-    }
-
-public:
-    reader(std::string filename, char delimiter = ','): delimiter_(delimiter) {
-        t_.start();
-        ifstream infile(filename);
-        unsigned line_no = 1;
-        read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
-            if (!buffer) return;
-            if (!header_.size()) {
-              header_ = tokenize_row(std::string(buffer, length));
-              rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
-              return;
-            }
-            t_.async_(std::make_pair(line_no++, std::string(buffer, length)));
-        });
-        t_.stop();
-    }
-
     template <typename LineHandler>
     void read_file_fast(ifstream &file, LineHandler &&line_handler){
             int64_t buffer_size = 40000;
@@ -168,6 +126,48 @@ public:
         }
         }
         return fields;
+    }
+
+    std::optional<std::unordered_map<std::string_view, std::string>>
+    try_read_row(size_t index) {
+        const auto it = t_.find_row(index + 1); // index = 0 is the header
+        if (it != t_.rows_.end()) {
+            const auto row = tokenize_row(it->second);
+            std::unordered_map<std::string_view, std::string> result;
+            for (size_t i = 0; i < header_.size(); ++i) {
+                if (i <= row.size())
+                  result.insert({header_[i], row[i]});
+                else 
+                  result.insert({header_[i], ""});
+            }
+            {
+                // For the last key-value pair, rtrim to remove \n or \r\n
+                const size_t i = header_.size() - 1;
+                if (i <= row.size())
+                  result.insert({header_[i], rtrim_copy(row[i])});
+                else 
+                  result.insert({header_[i], ""});
+            }
+            return result;
+        }
+        return std::nullopt;
+    }
+
+public:
+    reader(std::string filename, char delimiter = ','): delimiter_(delimiter) {
+        t_.start();
+        ifstream infile(filename);
+        unsigned line_no = 1;
+        read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
+            if (!buffer) return;
+            if (!header_.size()) {
+              header_ = tokenize_row(std::string(buffer, length));
+              rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
+              return;
+            }
+            t_.async_(std::make_pair(line_no++, std::string(buffer, length)));
+        });
+        t_.stop();
     }
 
     bool read_row(std::unordered_map<std::string_view, std::string> &result) {
