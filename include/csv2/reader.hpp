@@ -19,8 +19,9 @@ class reader {
     task_system t_{1};
     size_t lines_{0};
     std::vector<std::string> header_;
-    std::vector<std::string> row_;
+    std::vector<std::string_view> row_;
     std::string empty_{""};
+    std::string current_row_;
     size_t current_row_index_{0};
 
     template <typename LineHandler>
@@ -91,36 +92,60 @@ class reader {
         QuotedQuote
     };
 
-    std::vector<std::string> tokenize_row(std::string_view row) {
+    std::vector<std::string_view> tokenize_current_row() {
         CSVState state = CSVState::UnquotedField;
-        std::vector<std::string> fields {""};
+        std::vector<std::string_view> fields;
         size_t i = 0; // index of the current field
-        for (char c : row) {
+
+        int field_start = 0;
+        int field_end = 0;
+
+        for (size_t j = 0; j < current_row_.size(); ++j) {
+            char c = current_row_[j];
             switch (state) {
                 case CSVState::UnquotedField:
                     if (c == delimiter_) {
-                        fields.push_back(""); 
+                        // std::cout << "(" << field_start << ", " << field_end << ")\n";
+                        // std::cout << "(" << current_row_[field_start] << " -> " << current_row_[field_end] << ")\n";
+                        // std::cout << "Pushing: " << current_row_.substr(field_start, field_end - field_start) << "\n";
+                        fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
+                        field_start = field_end + 1; // start after delimiter
+                        field_end = field_start; // reset interval
+                        // field_end = field_start + 1;
+                        // std::cout << "Field start: " << current_row_[field_start] << "\n";
+                        // std::cout << current_row_.substr(field_start, field_end) << std::endl;
                         i++;
                     } else if (c == '"') {
                         state = CSVState::QuotedField;
                     } else {
-                        fields[i].push_back(c);
+                        field_end += 1;
+                        // std::cout << "Incrementing field_end. Now at " << current_row_[field_end] << "\n";
+                        if (j + 1 == current_row_.size()) { // last entry
+                            // std::cout << "(" << field_start << ", " << field_end << ")\n";
+                            // std::cout << "Pushing: " << current_row_.substr(field_start, field_end - field_start) << "\n";
+                            fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
+                        }
+                        // fields[i].push_back(c);
                     }
                     break;
                 case CSVState::QuotedField:
-                    switch (c) {
-                        case '"': state = CSVState::QuotedQuote;
-                                break;
-                        default:  fields[i].push_back(c);
-                                break; }
+                    if (c == '"') {
+                        state = CSVState::QuotedQuote;
+                    } else {
+                        field_end += 1;
+                        // fields[i].push_back(c);
+                    }
                     break;
                 case CSVState::QuotedQuote:
                     if (c == delimiter_) { // , after closing quote
-                        fields.push_back(""); 
+                        fields.push_back(current_row_.substr(field_start, field_end));
+                        field_start = field_end;
+                        // std::cout << current_row_.substr(field_start, field_end) << std::endl;
+                        // fields.push_back(""); 
                         i++;
                         state = CSVState::UnquotedField;
                     } else if (c == '"') { // "" -> "
-                        fields[i].push_back('"');
+                        // fields[i].push_back('"');
                         state = CSVState::QuotedField;
                     } else {
                         state = CSVState::UnquotedField;
@@ -134,13 +159,13 @@ class reader {
     bool
     try_read_row(row_t &result) {
         if (current_row_index_ < lines_) {
-            result.clear();
-            std::string row_string;
-            if (!t_.rows_.try_dequeue(row_string)) 
+            if (!t_.rows_.try_dequeue(current_row_)) 
                 return false;
-            row_ = tokenize_row(row_string);
+            row_ = tokenize_current_row();
+
+            result.clear();
             for (size_t i = 0; i < header_.size(); ++i) {
-                rtrim(row_[i]);
+                // rtrim(row_[i]);
                 if (i < row_.size()) {
                   result.insert({header_[i], row_[i]});
                 }
@@ -161,8 +186,10 @@ public:
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
             if (!header_.size()) {
-              header_ = tokenize_row(std::string(buffer, length));
-              rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
+              current_row_ = std::string{buffer, static_cast<size_t>(length)};
+              const auto header_tokens = tokenize_current_row();
+              header_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
+              // rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
               return;
             }
             lines_ += 1;
