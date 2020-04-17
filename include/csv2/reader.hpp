@@ -106,49 +106,44 @@ class reader {
             switch (state) {
                 case CSVState::UnquotedField:
                     if (c == delimiter_) {
-                        // std::cout << "(" << field_start << ", " << field_end << ")\n";
-                        // std::cout << "(" << current_row_[field_start] << " -> " << current_row_[field_end] << ")\n";
-                        // std::cout << "Pushing: " << current_row_.substr(field_start, field_end - field_start) << "\n";
                         fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
                         field_start = field_end + 1; // start after delimiter
                         field_end = field_start; // reset interval
-                        // field_end = field_start + 1;
-                        // std::cout << "Field start: " << current_row_[field_start] << "\n";
-                        // std::cout << current_row_.substr(field_start, field_end) << std::endl;
                         i++;
                     } else if (c == '"') {
+                        field_end += 1;
                         state = CSVState::QuotedField;
                     } else {
                         field_end += 1;
-                        // std::cout << "Incrementing field_end. Now at " << current_row_[field_end] << "\n";
                         if (j + 1 == current_row_.size()) { // last entry
-                            // std::cout << "(" << field_start << ", " << field_end << ")\n";
-                            // std::cout << "Pushing: " << current_row_.substr(field_start, field_end - field_start) << "\n";
                             fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
                         }
-                        // fields[i].push_back(c);
                     }
                     break;
                 case CSVState::QuotedField:
                     if (c == '"') {
+                        field_end += 1;
                         state = CSVState::QuotedQuote;
+                        if (j + 1 == current_row_.size()) { // last entry
+                            fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
+                        }
                     } else {
                         field_end += 1;
-                        // fields[i].push_back(c);
                     }
                     break;
                 case CSVState::QuotedQuote:
                     if (c == delimiter_) { // , after closing quote
-                        fields.push_back(current_row_.substr(field_start, field_end));
-                        field_start = field_end;
-                        // std::cout << current_row_.substr(field_start, field_end) << std::endl;
-                        // fields.push_back(""); 
+                        std::cout << "Pushing: " << current_row_.substr(field_start, field_end - field_start) << std::endl;
+                        fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
+                        field_start = field_end + 1; // start after delimiter
+                        field_end = field_start; // reset interval
                         i++;
                         state = CSVState::UnquotedField;
                     } else if (c == '"') { // "" -> "
                         // fields[i].push_back('"');
                         state = CSVState::QuotedField;
                     } else {
+                        field_end += 1;
                         state = CSVState::UnquotedField;
                     }
                     break;
@@ -191,7 +186,6 @@ public:
             if (!header_.size()) {
               const auto header_tokens = tokenize_current_row();
               header_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
-              // rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
               return;
             }
             lines_ += 1;
