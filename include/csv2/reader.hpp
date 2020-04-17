@@ -7,6 +7,7 @@
 #include <cmath>
 #include <string_view>
 #include <csv2/string_utils.hpp>
+#include <cstring>
 
 namespace csv2 {
 
@@ -113,37 +114,42 @@ class reader {
                                 break; }
                     break;
                 case CSVState::QuotedQuote:
-                    switch (c) {
-                        if (c == delimiter_) { // , after closing quote
-                            fields.push_back(""); 
-                            i++;
-                            state = CSVState::UnquotedField;
-                        } else if (c == '"') { // "" -> "
-                            fields[i].push_back('"');
-                            state = CSVState::QuotedField;
-                        } else {
-                            state = CSVState::UnquotedField;
-                        }
+                    if (c == delimiter_) { // , after closing quote
+                        fields.push_back(""); 
+                        i++;
+                        state = CSVState::UnquotedField;
+                    } else if (c == '"') { // "" -> "
+                        fields[i].push_back('"');
+                        state = CSVState::QuotedField;
+                    } else {
+                        state = CSVState::UnquotedField;
+                    }
                     break;
             }
-        }
         }
         return fields;
     }
 
     bool
     try_read_row(row_t &result) {
+        // std::cout << "Trying to read row\n";
         const auto it = t_.find_row(current_row_index_ + 1); // index = 0 is the header
         if (it != t_.rows_end()) {
             result.clear();
+            // std::cout << "Found row: " << it->second << std::endl;
             row_ = std::move(tokenize_row(it->second));
             for (size_t i = 0; i < header_.size(); ++i) {
                 rtrim(row_[i]);
-                if (i <= row_.size())
+                if (i < row_.size()) {
+                  // std::cout << header_[i] << ": " << row_[i] << std::endl;
                   result.insert({header_[i], row_[i]});
-                else 
+                }
+                else {
+                  // std::cout << "Empty row" << std::endl;
                   result.insert({header_[i], empty_});
+                }
             }
+            // std::cout << "Returning true\n";
             return true;
         }
         return false;
@@ -161,12 +167,14 @@ public:
               rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
               return;
             }
+            // std::cout << "Processed line\n";
             t_.async_(std::make_pair(line_no++, std::string(buffer, length)));
         });
         t_.stop();
     }
 
     bool read_row(row_t &result) {
+        // std::cout << "Reading row" << std::endl;
         if (current_row_index_ == t_.rows())
             return false;
         while (!try_read_row(result)) {}
