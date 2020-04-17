@@ -11,12 +11,15 @@
 namespace csv2 {
 
 using namespace std;
+using row_t = std::unordered_map<std::string_view, std::string_view>;
 
 class reader {
-    char delimiter_{','};
+    const char delimiter_{','};
     task_system t_{1};
     std::vector<std::string> header_;
-    size_t current_row_{0};
+    std::vector<std::string> row_;
+    std::string empty_{""};
+    size_t current_row_index_{0};
 
     template <typename LineHandler>
     void read_file_fast(ifstream &file, LineHandler &&line_handler){
@@ -128,29 +131,22 @@ class reader {
         return fields;
     }
 
-    std::optional<std::unordered_map<std::string_view, std::string>>
-    try_read_row(size_t index) {
-        const auto it = t_.find_row(index + 1); // index = 0 is the header
-        if (it != t_.rows_.end()) {
-            const auto row = tokenize_row(it->second);
-            std::unordered_map<std::string_view, std::string> result;
+    bool
+    try_read_row(row_t &result) {
+        const auto it = t_.find_row(current_row_index_ + 1); // index = 0 is the header
+        if (it != t_.rows_end()) {
+            result.clear();
+            row_ = std::move(tokenize_row(it->second));
             for (size_t i = 0; i < header_.size(); ++i) {
-                if (i <= row.size())
-                  result.insert({header_[i], row[i]});
+                rtrim(row_[i]);
+                if (i <= row_.size())
+                  result.insert({header_[i], row_[i]});
                 else 
-                  result.insert({header_[i], ""});
+                  result.insert({header_[i], empty_});
             }
-            {
-                // For the last key-value pair, rtrim to remove \n or \r\n
-                const size_t i = header_.size() - 1;
-                if (i <= row.size())
-                  result.insert({header_[i], rtrim_copy(row[i])});
-                else 
-                  result.insert({header_[i], ""});
-            }
-            return result;
+            return true;
         }
-        return std::nullopt;
+        return false;
     }
 
 public:
@@ -170,15 +166,11 @@ public:
         t_.stop();
     }
 
-    bool read_row(std::unordered_map<std::string_view, std::string> &result) {
-        if (current_row_ == t_.rows_.size())
+    bool read_row(row_t &result) {
+        if (current_row_index_ == t_.rows())
             return false;
-        std::optional<std::unordered_map<std::string_view, std::string>> row;
-        do {
-          row = try_read_row(current_row_);
-        } while(!row.has_value());
-        current_row_ += 1;
-        result = row.value();
+        while (!try_read_row(result)) {}
+        current_row_index_ += 1;
         return true;
     }
 

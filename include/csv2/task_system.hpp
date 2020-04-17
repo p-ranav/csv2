@@ -74,6 +74,11 @@ public:
     return rows_.size();
   }
 
+  auto rows_end() {
+    lock_t lock(rows_mutex_);
+    return rows_.end();
+  }
+
   template <typename F> void async_(F &&f) {
     const auto i = index_++;
     for (unsigned n = 0; n != count_; ++n) {
