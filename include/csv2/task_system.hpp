@@ -20,7 +20,7 @@ class task_system {
   std::atomic<unsigned> index_{0};
   std::atomic_bool no_more_tasks_{false};
   std::mutex rows_mutex_;
-  std::unordered_map<unsigned, std::string> rows_;
+  std::vector<std::string> rows_;
 
   friend class reader;
 
@@ -37,7 +37,7 @@ class task_system {
 
       {
         lock_t lock(rows_mutex_);
-        rows_.insert(op.value());
+        rows_.push_back(op.value().second);
       }
     }
   }
@@ -64,19 +64,9 @@ public:
     no_more_tasks_ = true;
   }
 
-  auto find_row(size_t index) {
-    lock_t lock(rows_mutex_);
-    return rows_.find(index);
-  }
-
   size_t rows() {
     lock_t lock(rows_mutex_);
     return rows_.size();
-  }
-
-  auto rows_end() {
-    lock_t lock(rows_mutex_);
-    return rows_.end();
   }
 
   template <typename F> void async_(F &&f) {

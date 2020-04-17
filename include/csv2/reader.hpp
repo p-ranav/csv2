@@ -17,6 +17,7 @@ using row_t = std::unordered_map<std::string_view, std::string_view>;
 class reader {
     const char delimiter_{','};
     task_system t_{1};
+    size_t lines_{0};
     std::vector<std::string> header_;
     std::vector<std::string> row_;
     std::string empty_{""};
@@ -90,7 +91,7 @@ class reader {
         QuotedQuote
     };
 
-    std::vector<std::string> tokenize_row(const std::string &row) {
+    std::vector<std::string> tokenize_row(std::string_view row) {
         CSVState state = CSVState::UnquotedField;
         std::vector<std::string> fields {""};
         size_t i = 0; // index of the current field
@@ -132,24 +133,18 @@ class reader {
 
     bool
     try_read_row(row_t &result) {
-        // std::cout << "Trying to read row\n";
-        const auto it = t_.find_row(current_row_index_ + 1); // index = 0 is the header
-        if (it != t_.rows_end()) {
+        if (current_row_index_ < lines_) {
             result.clear();
-            // std::cout << "Found row: " << it->second << std::endl;
-            row_ = std::move(tokenize_row(it->second));
+            row_ = std::move(tokenize_row(t_.rows_.at(current_row_index_)));
             for (size_t i = 0; i < header_.size(); ++i) {
                 rtrim(row_[i]);
                 if (i < row_.size()) {
-                  // std::cout << header_[i] << ": " << row_[i] << std::endl;
                   result.insert({header_[i], row_[i]});
                 }
                 else {
-                  // std::cout << "Empty row" << std::endl;
                   result.insert({header_[i], empty_});
                 }
             }
-            // std::cout << "Returning true\n";
             return true;
         }
         return false;
@@ -167,14 +162,14 @@ public:
               rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
               return;
             }
-            // std::cout << "Processed line\n";
+            lines_ += 1;
             t_.async_(std::make_pair(line_no++, std::string(buffer, length)));
         });
         t_.stop();
+        std::cout << "Parsed " << lines_ << " lines\n";
     }
 
     bool read_row(row_t &result) {
-        // std::cout << "Reading row" << std::endl;
         if (current_row_index_ == t_.rows())
             return false;
         while (!try_read_row(result)) {}
