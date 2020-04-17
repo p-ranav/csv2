@@ -133,7 +133,6 @@ class reader {
                     break;
                 case CSVState::QuotedQuote:
                     if (c == delimiter_) { // , after closing quote
-                        std::cout << "Pushing: " << current_row_.substr(field_start, field_end - field_start) << std::endl;
                         fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
                         field_start = field_end + 1; // start after delimiter
                         field_end = field_start; // reset interval
