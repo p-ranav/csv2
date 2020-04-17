@@ -16,6 +16,7 @@ using row_t = std::unordered_map<std::string_view, std::string_view>;
 
 class reader {
     const char delimiter_{','};
+    const std::vector<char> trim_{'\n', '\r'};
     task_system t_{1};
     size_t lines_{0};
     std::vector<std::string> header_;
@@ -185,15 +186,16 @@ public:
         unsigned line_no = 1;
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
+            current_row_ = std::string{buffer, static_cast<size_t>(length)};
+            rtrim(current_row_, trim_);
             if (!header_.size()) {
-              current_row_ = std::string{buffer, static_cast<size_t>(length)};
               const auto header_tokens = tokenize_current_row();
               header_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
               // rtrim(header_[header_.size() - 1]); // in-place rtrim the last header
               return;
             }
             lines_ += 1;
-            t_.async_(std::make_pair(line_no++, std::string(buffer, length)));
+            t_.async_(std::make_pair(line_no++, std::move(current_row_)));
         });
         t_.stop();
         std::cout << "Parsed " << lines_ << " lines\n";
