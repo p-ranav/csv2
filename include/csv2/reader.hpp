@@ -28,6 +28,7 @@ class reader {
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
         option::TrimCharacters,
+        option::ColumnNames,
         option::IgnoreColumns,
         option::SkipEmptyRows,
         option::ThreadPool>;
@@ -206,6 +207,7 @@ public:
             details::get<details::CsvOption::filename>(option::Filename{""}, std::forward<Args>(args)...),
             details::get<details::CsvOption::delimiter>(option::Delimiter{','}, std::forward<Args>(args)...),
             details::get<details::CsvOption::trim_characters>(option::TrimCharacters{std::vector<char>{'\n', '\r'}}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::column_names>(option::ColumnNames{}, std::forward<Args>(args)...),
             details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{}, std::forward<Args>(args)...),
             details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
             details::get<details::CsvOption::thread_pool>(option::ThreadPool{1}, std::forward<Args>(args)...)
@@ -214,6 +216,9 @@ public:
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
         auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
         auto& thread_pool = get_value<details::CsvOption::thread_pool>();
+        auto& column_names = get_value<details::CsvOption::column_names>();
+        if (column_names.size())
+            header_ = column_names;
         ifstream infile(filename);
         if (!infile.is_open())
             throw std::runtime_error("error: Failed to open " + filename);

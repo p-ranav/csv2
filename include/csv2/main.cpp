@@ -11,9 +11,9 @@ int main(int argc, char **argv) {
   };
   row_t row;
   while(csv.read_row(row)) {
-    // for (auto& [k, v]: row)
-    //     std::cout << k << ":" << v << ";";
-    // std::cout << "\n";
+    for (auto& [k, v]: row)
+        std::cout << k << ":" << v << ";";
+    std::cout << "\n";
   }
   std::cout << "Loaded " << csv.rows() << "x" << csv.cols() << " entries\n";
 }
