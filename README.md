@@ -10,6 +10,7 @@ int main() {
   Reader csv{
     option::Filename{std::string("foo.csv")},
     option::Delimiter{','},
+    option::SkipInitialSpace{true},
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},
     option::TrimPolicy{Trim::trailing}
     // ...
