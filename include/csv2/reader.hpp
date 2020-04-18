@@ -59,9 +59,15 @@ class Reader {
     bool skip_initial_space_{false};
     std::vector<std::string> ignore_columns_;
     std::thread file_reader_thread_;
-    std::mutex mutex_;
-    std::condition_variable line_available_;
+
+    std::mutex header_mutex_;
+    std::condition_variable header_available_cv_;
+    std::atomic_bool header_available_{false};
+ 
+    std::mutex line_mutex_;
+    std::condition_variable line_available_cv_;
     std::atomic_bool no_more_lines_{false};
+
     Mode reader_mode_{Mode::asynchronous};
 
     using Settings = std::tuple<option::Filename, 
@@ -235,7 +241,9 @@ class Reader {
             if (!buffer) {
                 // std::cout << "Notified all\n";
                 no_more_lines_ = true;
-                line_available_.notify_all();
+                line_available_cv_.notify_all();
+                header_available_ = true;
+                header_available_cv_.notify_all(); // could be an empty CSV
                 return;
             }
             auto line = std::string{buffer, static_cast<size_t>(length)};
@@ -247,12 +255,13 @@ class Reader {
               current_row_ = line;
               const auto&& header_tokens = tokenize_current_row();
               header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
+              header_available_cv_.notify_all();
               return;
             }
             lines_ += 1;
             line_strings_.push_back(std::move(line));
             // std::cout << "Notifying one\n";
-            line_available_.notify_one();
+            line_available_cv_.notify_one();
         });
     }
 
@@ -300,8 +309,11 @@ public:
 
         // NOTE: Trimming happens at the row level and not at the field level
 
-        if (column_names.size())
+        if (column_names.size()) {
             header_tokens_ = column_names;
+            header_available_ = true;
+            header_available_cv_.notify_all();
+        }
 
         std::ios_base::sync_with_stdio(false);
         std::ifstream infile(filename);
@@ -323,8 +335,8 @@ public:
     bool read_row(Row &result) {
         if (no_more_lines_) return false;
         // std::cout << "Waiting for line\n";
-        std::unique_lock<std::mutex> lock{mutex_};
-        line_available_.wait(lock);
+        std::unique_lock<std::mutex> lock{line_mutex_};
+        line_available_cv_.wait(lock);
 
         if (current_row_index_ == lines_)
             return false;
@@ -349,11 +361,19 @@ public:
         return lines_;
     }
 
-    size_t cols() const {
+    size_t cols() {
+        if (!header_available_) {
+            std::unique_lock<std::mutex> lock{header_mutex_};
+            header_available_cv_.wait(lock);
+        }
         return header_tokens_.size() - get_value<details::CsvOption::ignore_columns>().size();
     }
 
-    std::vector<std::string_view> header() const {
+    std::vector<std::string_view> header() {
+        if (!header_available_) {
+            std::unique_lock<std::mutex> lock{header_mutex_};
+            header_available_cv_.wait(lock);
+        }
         std::vector<std::string_view> result;
         for (auto& h: header_tokens_)
             result.push_back(h);
