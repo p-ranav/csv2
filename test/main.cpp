@@ -32,7 +32,7 @@ TEST_CASE("Parse the most basic of CSV buffers" * test_suite("reader")) {
   };
 
   size_t i = 0;
-  row_t row;
+  row row;
   while(csv.read_row(row)) {
     if (i == 0) {
       REQUIRE(row["a"] == "1");

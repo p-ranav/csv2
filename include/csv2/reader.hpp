@@ -14,7 +14,7 @@
 namespace csv2 {
 
 using namespace std;
-using row_t = std::unordered_map<std::string_view, std::string_view>;
+using row = std::unordered_map<std::string_view, std::string_view>;
 
 class reader {
     task_system t_;
@@ -176,7 +176,7 @@ class reader {
     }
 
     bool
-    try_read_row(row_t &result) {
+    try_read_row(row &result) {
         auto& ignore_columns = get_value<details::CsvOption::ignore_columns>();
         if (current_row_index_ < lines_) {
             if (!t_.rows_.try_dequeue(current_row_)) 
@@ -264,7 +264,7 @@ public:
         t_.stop();
     }
 
-    bool read_row(row_t &result) {
+    bool read_row(row &result) {
         if (current_row_index_ == lines_)
             return false;
         while (!try_read_row(result)) {}

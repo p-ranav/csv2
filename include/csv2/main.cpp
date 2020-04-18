@@ -10,9 +10,9 @@ int main(int argc, char **argv) {
     option::IgnoreColumns{std::vector<std::string>{}},
     option::SkipEmptyRows{true},
   };
-  row_t row;
-  while(csv.read_row(row)) {
-    for (auto& [k, v]: row)
+  row next;
+  while(csv.read_row(next)) {
+    for (auto& [k, v]: next)
         std::cout << k << ":" << v << ";";
     std::cout << "\n";
   }
