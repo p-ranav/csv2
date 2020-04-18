@@ -30,10 +30,8 @@ class task_system {
       if (!op.has_value() && !queue_[i].try_dequeue(op)) {
         if (no_more_tasks_) break; else continue;
       }
-
-      {
-        rows_.enqueue(op.value().second);
-      }
+      // Enqueue line
+      rows_.enqueue(op.value());
     }
   }
 
@@ -44,9 +42,6 @@ public:
   ~task_system() {
     for (auto &thread: threads_)
       thread.join();
-    // for (auto& [k,v]: rows_)
-    //   std::cout << k << ": " << v;
-    // std::cout << rows_.size() << std::endl;
   }
 
   void start() {
@@ -60,12 +55,19 @@ public:
   }
 
   template <typename F> void async_(F &&f) {
-    const auto i = index_++;
-    for (unsigned n = 0; n != count_; ++n) {
-      if (queue_[(i + n) % count_].enqueue(std::forward<F>(f)))
-        return;
+    if (count_ == 0) {
+      // No worker threads
+      // Directly enqueue onto rows_
+      rows_.enqueue(std::forward<std::string>(f));
+      return;
+    } else {
+      const auto i = index_++;
+      for (unsigned n = 0; n != count_; ++n) {
+        if (queue_[(i + n) % count_].enqueue(std::forward<F>(f)))
+          return;
+      }
+      queue_[i % count_].enqueue(std::forward<F>(f));
     }
-    queue_[i % count_].enqueue(std::forward<F>(f));
   }
 };
 

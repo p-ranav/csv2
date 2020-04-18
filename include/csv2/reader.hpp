@@ -211,7 +211,6 @@ public:
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
         t_.start();
         ifstream infile(filename);
-        unsigned line_no = 1;
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
             current_row_ = std::string{buffer, static_cast<size_t>(length)};
@@ -222,7 +221,7 @@ public:
               return;
             }
             lines_ += 1;
-            t_.async_(std::make_pair(line_no++, std::move(current_row_)));
+            t_.async_(std::move(current_row_));
         });
         t_.stop();
     }

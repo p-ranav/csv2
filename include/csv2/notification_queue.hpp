@@ -9,7 +9,7 @@
 
 namespace csv2 {
 
-using record_t = std::pair<unsigned, std::string>;
+using record_t = std::string;
 
 class notification_queue {
   moodycamel::ConcurrentQueue<record_t> queue_;
