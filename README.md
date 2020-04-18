@@ -12,6 +12,7 @@ int main() {
     option::Delimiter{','},
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},
     option::TrimPolicy{Trim::trailing}
+    // ...
   };
   
   Row next;
