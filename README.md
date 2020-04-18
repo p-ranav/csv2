@@ -5,7 +5,7 @@
 #include <csv2/reader.hpp>
 using namespace csv2;
 
-int main(int argc, char **argv) {
+int main() {
   reader csv{
     option::Filename{std::string("foo.csv")},
     option::Delimiter{','},
@@ -17,8 +17,13 @@ int main(int argc, char **argv) {
   while (csv.read_row(next)) {
     // Do something with row
   }
+  // No more rows
 }
 ```
 
 ## Highlights
-* 
+* Single header file - Just include `csv2/reader.hpp`
+* Blazing fast - Fast file reader coupled with generous use of `std::string_view` to minimize allocations/copies.
+* Single-threaded - Runs entirely in the thread in which you're creating the `csv2::reader`.
+* Configurable 
+* MIT License
