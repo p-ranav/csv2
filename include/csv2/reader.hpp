@@ -17,7 +17,7 @@ using namespace std;
 using row_t = std::unordered_map<std::string_view, std::string_view>;
 
 class reader {
-    task_system t_{1};
+    task_system t_;
     size_t lines_{0};
     std::vector<std::string> header_;
     std::vector<std::string_view> row_;
@@ -29,7 +29,8 @@ class reader {
         option::Delimiter, 
         option::TrimCharacters,
         option::IgnoreColumns,
-        option::SkipEmptyRows>;
+        option::SkipEmptyRows,
+        option::ThreadPool>;
     Settings settings_;
 
     template <details::CsvOption id>
@@ -207,11 +208,14 @@ public:
             details::get<details::CsvOption::delimiter>(option::Delimiter{','}, std::forward<Args>(args)...),
             details::get<details::CsvOption::trim_characters>(option::TrimCharacters{}, std::forward<Args>(args)...),
             details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...)
+            details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::thread_pool>(option::ThreadPool{1}, std::forward<Args>(args)...)
         ) {
         auto& filename = get_value<details::CsvOption::filename>();
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
         auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
+        auto& thread_pool = get_value<details::CsvOption::thread_pool>();
+        t_.resize(thread_pool);
         t_.start();
         ifstream infile(filename);
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {

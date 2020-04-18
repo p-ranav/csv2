@@ -70,7 +70,8 @@ enum class CsvOption {
   delimiter,
   trim_characters,
   ignore_columns,
-  skip_empty_rows
+  skip_empty_rows,
+  thread_pool
 };
 
 template <typename T, CsvOption Id> struct Setting {
@@ -170,5 +171,6 @@ using Delimiter = details::CharSetting<details::CsvOption::delimiter>;
 using TrimCharacters = details::Setting<std::vector<char>, details::CsvOption::trim_characters>;
 using IgnoreColumns = details::Setting<std::vector<std::string>, details::CsvOption::ignore_columns>;
 using SkipEmptyRows = details::BooleanSetting<details::CsvOption::skip_empty_rows>;
+using ThreadPool = details::IntegerSetting<details::CsvOption::thread_pool>;
 } // namespace option
 } // namespace csv2

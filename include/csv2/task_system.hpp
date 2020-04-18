@@ -11,9 +11,9 @@
 namespace csv2 {
 
 class task_system {
-  const unsigned count_;
+  unsigned count_;
   std::vector<std::thread> threads_;
-  std::vector<notification_queue> queue_{count_};
+  std::vector<notification_queue> queue_;
   std::atomic<unsigned> index_{0};
   std::atomic_bool no_more_tasks_{false};
   moodycamel::ConcurrentQueue<std::string> rows_;
@@ -36,12 +36,14 @@ class task_system {
   }
 
 public:
-  task_system(const unsigned count = std::thread::hardware_concurrency()) 
-    : count_(count) {}
-
   ~task_system() {
     for (auto &thread: threads_)
       thread.join();
+  }
+
+  void resize(const unsigned count) {
+    count_ = count;
+    queue_.resize(count_);
   }
 
   void start() {
