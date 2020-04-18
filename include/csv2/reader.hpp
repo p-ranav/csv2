@@ -25,6 +25,7 @@ class reader {
     std::string current_row_;
     size_t current_row_index_{0};
     char quote_character_;
+    std::function<void(std::string &s, const std::vector<char>& t)> trim_function_;
 
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
@@ -214,7 +215,7 @@ public:
             details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
             details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'}, std::forward<Args>(args)...),
             details::get<details::CsvOption::thread_pool>(option::ThreadPool{1}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::none}, std::forward<Args>(args)...)
+            details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::trailing}, std::forward<Args>(args)...)
         ) {
         auto& filename = get_value<details::CsvOption::filename>();
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
@@ -223,21 +224,22 @@ public:
         auto& column_names = get_value<details::CsvOption::column_names>();
         quote_character_ = get_value<details::CsvOption::quote_character>();
         auto &trim_policy = get_value<details::CsvOption::trim_policy>();
-        std::function<void(std::string &s, const std::vector<char>& t)> trim_function;
         switch(trim_policy) {
             case Trim::none:
-                trim_function = {};
+                trim_function_ = {};
                 break;
             case Trim::leading:
-                trim_function = ltrim;
+                trim_function_ = ltrim;
                 break;
             case Trim::trailing:
-                trim_function = rtrim;
+                trim_function_ = rtrim;
                 break;
             case Trim::leading_and_trailing:
-                trim_function = trim;
+                trim_function_ = trim;
                 break;
         }
+
+        // NOTE: Trimming happens at the row level and not at the field level
 
         if (column_names.size())
             header_ = column_names;
@@ -249,8 +251,8 @@ public:
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
             current_row_ = std::string{buffer, static_cast<size_t>(length)};
-            if (trim_function)
-                trim_function(current_row_, trim_characters);
+            if (trim_function_)
+                trim_function_(current_row_, trim_characters);
             if (skip_empty_rows && current_row_.empty())
                 return;
             if (!header_.size()) {
