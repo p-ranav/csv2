@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
   };
 
   Row next;
-  while (csv.read_row(next);) {
+  while (csv.read_row(next)) {
     // for (auto& [k, v]: next)
     //     std::cout << k << ":" << v << ";";
     // std::cout << "\n";

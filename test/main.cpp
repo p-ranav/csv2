@@ -87,17 +87,17 @@ TEST_CASE("Parse headers with double quotes" * test_suite("Reader")) {
   REQUIRE(header[2] == "\"Special rate \"\"1.79\"\"\"");
 }
 
-// TEST_CASE("Parse headers with pairs of single-quotes" * test_suite("Reader")) {
-//   Reader csv{
-//     option::Filename{"inputs/test_07.csv"},
-//     option::QuoteCharacter{'\''}
-//   };
-//   std::vector<std::string_view> header = csv.header();
-//   REQUIRE(header.size() == 3);
-//   REQUIRE(header[0] == "''Free trip to A,B''");
-//   REQUIRE(header[1] == "''5.89''");
-//   REQUIRE(header[2] == "''Special rate ''''1.79''''''");
-// }
+TEST_CASE("Parse headers with pairs of single-quotes" * test_suite("Reader")) {
+  Reader csv{
+    option::Filename{"inputs/test_07.csv"},
+    option::QuoteCharacter{'\''}
+  };
+  std::vector<std::string_view> header = csv.header();
+  REQUIRE(header.size() == 3);
+  REQUIRE(header[0] == "'Free trip to A,B'");
+  REQUIRE(header[1] == "''5.89''");
+  REQUIRE(header[2] == "''Special rate ''''1.79''''''");
+}
 
 TEST_CASE("Parse the most basic of CSV buffers - No header row" * test_suite("Reader")) {
   Reader csv{

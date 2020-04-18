@@ -147,6 +147,7 @@ class Reader {
     };
 
     std::vector<std::string_view> tokenize_current_row() {
+        std::cout << current_row_ << std::endl;
         CSVState state = CSVState::UnquotedField;
         std::vector<std::string_view> fields;
         size_t i = 0; // index of the current field
