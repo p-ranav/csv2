@@ -184,7 +184,6 @@ class reader {
             for (size_t i = 0; i < header_.size(); ++i) {
                 if (std::find(ignore_columns.begin(), ignore_columns.end(), header_[i]) != ignore_columns.end())
                     continue;
-                // rtrim(row_[i]);
                 if (i < row_.size()) {
                   result.insert({header_[i], row_[i]});
                 }
