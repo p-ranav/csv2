@@ -43,7 +43,6 @@ namespace string {
 using row = std::unordered_map<std::string_view, std::string_view>;
 
 class reader {
-    // task_system t_;
     size_t lines_{0};
     std::vector<std::string> line_strings_;
     std::vector<std::string> header_tokens_;
