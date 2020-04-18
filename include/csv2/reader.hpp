@@ -30,6 +30,7 @@ class reader {
     std::string empty_{""};
     std::string current_row_;
     size_t current_row_index_{0};
+    char delimiter_;
     char quote_character_;
     std::function<void(std::string &s, const std::vector<char>& t)> trim_function_;
     bool skip_initial_space_{false};
@@ -127,7 +128,6 @@ class reader {
     };
 
     std::vector<std::string_view> tokenize_current_row() {
-        auto& delimiter = get_value<details::CsvOption::delimiter>();
         CSVState state = CSVState::UnquotedField;
         std::vector<std::string_view> fields;
         size_t i = 0; // index of the current field
@@ -139,7 +139,7 @@ class reader {
             char c = current_row_[j];
             switch (state) {
                 case CSVState::UnquotedField:
-                    if (c == delimiter) {
+                    if (c == delimiter_) {
                         // Check for initial space right after delimiter
                         size_t initial_space_offset{0};
                         if (skip_initial_space_ && j + 1 < current_row_.size() && current_row_[j + 1] == ' ') {
@@ -173,7 +173,7 @@ class reader {
                     }
                     break;
                 case CSVState::QuotedQuote:
-                    if (c == delimiter) { // , after closing quote
+                    if (c == delimiter_) { // , after closing quote
                         // Check for initial space right after delimiter
                         size_t initial_space_offset{0};
                         if (skip_initial_space_ && j + 1 < current_row_.size() && current_row_[j + 1] == ' ') {
@@ -245,6 +245,7 @@ public:
         auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
         auto& thread_pool = get_value<details::CsvOption::thread_pool>();
         auto& column_names = get_value<details::CsvOption::column_names>();
+        delimiter_ = get_value<details::CsvOption::delimiter>();
         ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
         quote_character_ = get_value<details::CsvOption::quote_character>();
         skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
