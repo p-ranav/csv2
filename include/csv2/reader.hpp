@@ -13,6 +13,10 @@
 #include <cctype>
 #include <locale>
 #include <string>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <iostream>
 
 namespace csv2 {
 
@@ -54,6 +58,11 @@ class Reader {
     std::function<void(std::string &s, const std::vector<char>& t)> trim_function_;
     bool skip_initial_space_{false};
     std::vector<std::string> ignore_columns_;
+    std::thread file_reader_thread_;
+    std::mutex mutex_;
+    std::condition_variable line_available_;
+    std::atomic_bool no_more_lines_{false};
+    Mode reader_mode_{Mode::asynchronous};
 
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
@@ -63,7 +72,8 @@ class Reader {
         option::SkipEmptyRows,
         option::QuoteCharacter,
         option::TrimPolicy,
-        option::SkipInitialSpace>;
+        option::SkipInitialSpace,
+        option::ReaderMode>;
     Settings settings_;
 
     template <details::CsvOption id>
@@ -217,6 +227,35 @@ class Reader {
         return fields;
     }
 
+    void file_reader_thread_function(std::ifstream infile) {
+        auto& trim_characters = get_value<details::CsvOption::trim_characters>();
+        auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
+
+        read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
+            if (!buffer) {
+                // std::cout << "Notified all\n";
+                no_more_lines_ = true;
+                line_available_.notify_all();
+                return;
+            }
+            auto line = std::string{buffer, static_cast<size_t>(length)};
+            if (trim_function_)
+                trim_function_(line, trim_characters);
+            if (skip_empty_rows && line.empty())
+                return;
+            if (!header_tokens_.size()) {
+              current_row_ = line;
+              const auto&& header_tokens = tokenize_current_row();
+              header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
+              return;
+            }
+            lines_ += 1;
+            line_strings_.push_back(std::move(line));
+            // std::cout << "Notifying one\n";
+            line_available_.notify_one();
+        });
+    }
+
 public:
     template <typename... Args,
             typename std::enable_if<details::are_settings_from_tuple<
@@ -232,16 +271,17 @@ public:
             details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
             details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'}, std::forward<Args>(args)...),
             details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::trailing}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false}, std::forward<Args>(args)...)
+            details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::reader_mode>(option::ReaderMode{Mode::asynchronous}, std::forward<Args>(args)...)
         ) {
+
         auto& filename = get_value<details::CsvOption::filename>();
-        auto& trim_characters = get_value<details::CsvOption::trim_characters>();
-        auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
         auto& column_names = get_value<details::CsvOption::column_names>();
         delimiter_ = get_value<details::CsvOption::delimiter>();
         ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
         quote_character_ = get_value<details::CsvOption::quote_character>();
         skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
+        reader_mode_ = get_value<details::CsvOption::reader_mode>();
         auto &trim_policy = get_value<details::CsvOption::trim_policy>();
         switch(trim_policy) {
             case Trim::none:
@@ -262,30 +302,30 @@ public:
 
         if (column_names.size())
             header_tokens_ = column_names;
-            
+
+        std::ios_base::sync_with_stdio(false);
         std::ifstream infile(filename);
         if (!infile.is_open())
             throw std::runtime_error("error: Failed to open " + filename);
 
-        read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
-            if (!buffer) return;
-            auto line = std::string{buffer, static_cast<size_t>(length)};
-            if (trim_function_)
-                trim_function_(line, trim_characters);
-            if (skip_empty_rows && line.empty())
-                return;
-            if (!header_tokens_.size()) {
-              current_row_ = line;
-              const auto&& header_tokens = tokenize_current_row();
-              header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
-              return;
-            }
-            lines_ += 1;
-            line_strings_.push_back(std::move(line));
-        });
+        if (reader_mode_ == Mode::asynchronous)
+            file_reader_thread_ = std::thread(&Reader::file_reader_thread_function, this, std::move(infile));
+        else
+            file_reader_thread_function(std::move(infile)); 
+    }   
+
+    ~Reader() {
+        if (reader_mode_ == Mode::asynchronous)
+            if (file_reader_thread_.joinable())
+                file_reader_thread_.join();
     }
 
     bool read_row(Row &result) {
+        if (no_more_lines_) return false;
+        // std::cout << "Waiting for line\n";
+        std::unique_lock<std::mutex> lock{mutex_};
+        line_available_.wait(lock);
+
         if (current_row_index_ == lines_)
             return false;
         current_row_ = line_strings_[current_row_index_];
