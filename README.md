@@ -1,6 +1,5 @@
 # csv2
-Fast and Lazy CSV Parser for Modern C++
-
+`csv2` is a fast and lazy CSV Parser written in `C++17`
 
 ```cpp
 #include <csv2/reader.hpp>
@@ -14,9 +13,12 @@ int main(int argc, char **argv) {
     option::TrimPolicy{Trim::trailing}
   };
 
-  row next;
+  row next; // unordered_map<string_view, string_view>
   while (csv.read_row(next)) {
     // Do something with row
   }
 }
 ```
+
+## Highlights
+* 
