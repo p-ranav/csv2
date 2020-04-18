@@ -205,7 +205,7 @@ public:
         : settings_(
             details::get<details::CsvOption::filename>(option::Filename{""}, std::forward<Args>(args)...),
             details::get<details::CsvOption::delimiter>(option::Delimiter{','}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::trim_characters>(option::TrimCharacters{}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::trim_characters>(option::TrimCharacters{std::vector<char>{'\n', '\r'}}, std::forward<Args>(args)...),
             details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{}, std::forward<Args>(args)...),
             details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
             details::get<details::CsvOption::thread_pool>(option::ThreadPool{1}, std::forward<Args>(args)...)
@@ -214,9 +214,11 @@ public:
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
         auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
         auto& thread_pool = get_value<details::CsvOption::thread_pool>();
+        ifstream infile(filename);
+        if (!infile.is_open())
+            throw std::runtime_error("error: Failed to open " + filename);
         t_.resize(thread_pool);
         t_.start();
-        ifstream infile(filename);
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
             current_row_ = std::string{buffer, static_cast<size_t>(length)};

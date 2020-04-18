@@ -1,0 +1,7 @@
+Type, Code, Message, Component, File, Line, Function
+0, 1, My exception 1, EnergoKodInstrumentyTest, /home/szyk/!-EnergoKod/!-Libs/EnergoKodInstrumenty/Tests/Src/ExceptionsTest.cpp, 54, virtual void ExceptionsTest::run()
+0, 1, My exception 2, EnergoKodInstrumentyTest, /home/szyk/!-EnergoKod/!-Libs/EnergoKodInstrumenty/Tests/Src/ExceptionsTest.cpp, 60, virtual void ExceptionsTest::run()
+0, 1, My exception 3, EnergoKodInstrumentyTest, /home/szyk/!-EnergoKod/!-Libs/EnergoKodInstrumenty/Tests/Src/ExceptionsTest.cpp, 66, virtual void ExceptionsTest::run()
+1, 2, My warning 1, EnergoKodInstrumentyTest, /home/szyk/!-EnergoKod/!-Libs/EnergoKodInstrumenty/Tests/Src/ExceptionsTest.cpp, 70, virtual void ExceptionsTest::run()
+1, 2, My warning 2, EnergoKodInstrumentyTest, /home/szyk/!-EnergoKod/!-Libs/EnergoKodInstrumenty/Tests/Src/ExceptionsTest.cpp, 71, virtual void ExceptionsTest::run()
+1, 2, My warning 3, EnergoKodInstrumentyTest, /home/szyk/!-EnergoKod/!-Libs/EnergoKodInstrumenty/Tests/Src/ExceptionsTest.cpp, 72, virtual void ExceptionsTest::run()

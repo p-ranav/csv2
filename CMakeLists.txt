@@ -23,19 +23,15 @@ find_package(Threads REQUIRED)
 add_library(csv2 INTERFACE)
 add_library(csv2::csv2 ALIAS csv2)
 
-target_compile_features(csv2 INTERFACE cxx_std_11)
+target_compile_features(csv2 INTERFACE cxx_std_17)
 target_include_directories(csv2 INTERFACE
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
 target_link_libraries(csv2 INTERFACE Threads::Threads)
 
-# if(CSV2_DEMO)
-#   add_subdirectory(demo)
-# endif()
-
-# if(CSV2_SAMPLES)
-#   add_subdirectory(samples)
-# endif()
+if(CSV2_TEST)
+  add_subdirectory(test)
+endif()
 
 if(NOT CSV2_SUBPROJECT)
   configure_package_config_file(csv2Config.cmake.in
