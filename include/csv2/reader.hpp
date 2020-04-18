@@ -10,6 +10,7 @@
 #include <cstring>
 #include <csv2/setting.hpp>
 #include <tuple>
+#include <functional>
 
 namespace csv2 {
 
