@@ -7,6 +7,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <csv2/external/concurrentqueue/concurrentqueue.h>
+#include <csv2/external/readerwriterqueue/readerwriterqueue.h>
 
 namespace csv2 {
 
@@ -34,7 +35,7 @@ class task_system {
   std::vector<line_queue> queue_;
   std::atomic<unsigned> index_{0};
   std::atomic_bool no_more_tasks_{false};
-  moodycamel::ConcurrentQueue<std::string> rows_;
+  moodycamel::ReaderWriterQueue<std::string> rows_;
 
   friend class reader;
 
