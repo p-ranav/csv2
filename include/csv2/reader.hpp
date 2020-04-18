@@ -28,7 +28,8 @@ class reader {
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
         option::TrimCharacters,
-        option::IgnoreColumns>;
+        option::IgnoreColumns,
+        option::SkipEmptyRows>;
     Settings settings_;
 
     template <details::CsvOption id>
@@ -205,16 +206,20 @@ public:
             details::get<details::CsvOption::filename>(option::Filename{""}, std::forward<Args>(args)...),
             details::get<details::CsvOption::delimiter>(option::Delimiter{','}, std::forward<Args>(args)...),
             details::get<details::CsvOption::trim_characters>(option::TrimCharacters{}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{}, std::forward<Args>(args)...)
+            details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...)
         ) {
         auto& filename = get_value<details::CsvOption::filename>();
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
+        auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
         t_.start();
         ifstream infile(filename);
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
             current_row_ = std::string{buffer, static_cast<size_t>(length)};
             rtrim(current_row_, trim_characters);
+            if (skip_empty_rows && current_row_.empty())
+                return;
             if (!header_.size()) {
               const auto header_tokens = tokenize_current_row();
               header_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
