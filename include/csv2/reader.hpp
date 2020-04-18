@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include <fstream>
-#include <iostream>
 #include <algorithm>
 #include <cmath>
 #include <string_view>
@@ -147,7 +146,6 @@ class Reader {
     };
 
     std::vector<std::string_view> tokenize_current_row() {
-        std::cout << current_row_ << std::endl;
         CSVState state = CSVState::UnquotedField;
         std::vector<std::string_view> fields;
         size_t i = 0; // index of the current field
@@ -217,27 +215,6 @@ class Reader {
             }
         }
         return fields;
-    }
-
-    bool
-    try_read_row(Row &result) {
-        if (current_row_index_ < lines_) {
-            current_row_ = line_strings_[current_row_index_];
-            row_tokens_ = tokenize_current_row();
-            result.clear();
-            for (size_t i = 0; i < header_tokens_.size(); ++i) {
-                if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(), header_tokens_[i]) != ignore_columns_.end())
-                    continue;
-                if (i < row_tokens_.size()) {
-                  result.insert({header_tokens_[i], row_tokens_[i]});
-                }
-                else {
-                  result.insert({header_tokens_[i], empty_});
-                }
-            }
-            return true;
-        }
-        return false;
     }
 
 public:
@@ -311,7 +288,19 @@ public:
     bool read_row(Row &result) {
         if (current_row_index_ == lines_)
             return false;
-        try_read_row(result);
+        current_row_ = line_strings_[current_row_index_];
+        row_tokens_ = tokenize_current_row();
+        result.clear();
+        for (size_t i = 0; i < header_tokens_.size(); ++i) {
+            if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(), header_tokens_[i]) != ignore_columns_.end())
+                continue;
+            if (i < row_tokens_.size()) {
+                result.insert({header_tokens_[i], row_tokens_[i]});
+            }
+            else {
+                result.insert({header_tokens_[i], empty_});
+            }
+        }
         current_row_index_ += 1;
         return true;
     }
