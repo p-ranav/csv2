@@ -58,17 +58,7 @@ class Reader {
     std::function<void(std::string &s, const std::vector<char>& t)> trim_function_;
     bool skip_initial_space_{false};
     std::vector<std::string> ignore_columns_;
-    std::thread file_reader_thread_;
-
-    std::mutex header_mutex_;
-    std::condition_variable header_available_cv_;
-    std::atomic_bool header_available_{false};
- 
-    std::mutex line_mutex_;
-    std::condition_variable line_available_cv_;
     std::atomic_bool no_more_lines_{false};
-
-    Mode reader_mode_{Mode::asynchronous};
 
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
@@ -78,8 +68,7 @@ class Reader {
         option::SkipEmptyRows,
         option::QuoteCharacter,
         option::TrimPolicy,
-        option::SkipInitialSpace,
-        option::ReaderMode>;
+        option::SkipInitialSpace>;
     Settings settings_;
 
     template <details::CsvOption id>
@@ -94,7 +83,7 @@ class Reader {
     }
 
     template <typename LineHandler>
-    void read_file_fast(std::ifstream &file, LineHandler &&line_handler){
+    void read_file_fast_(std::ifstream &file, LineHandler &&line_handler){
             int64_t buffer_size = 40000;
             file.seekg(0, std::ios::end);
             std::ifstream::pos_type p = file.tellg();
@@ -161,7 +150,7 @@ class Reader {
         QuotedQuote
     };
 
-    std::vector<std::string_view> tokenize_current_row() {
+    std::vector<std::string_view> tokenize_current_row_() {
         CSVState state = CSVState::UnquotedField;
         std::vector<std::string_view> fields;
         size_t i = 0; // index of the current field
@@ -233,17 +222,13 @@ class Reader {
         return fields;
     }
 
-    void file_reader_thread_function(std::ifstream infile) {
+    void read_file_(std::ifstream infile) {
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
         auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
 
-        read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
+        read_file_fast_(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) {
-                // std::cout << "Notified all\n";
                 no_more_lines_ = true;
-                line_available_cv_.notify_all();
-                header_available_ = true;
-                header_available_cv_.notify_all(); // could be an empty CSV
                 return;
             }
             auto line = std::string{buffer, static_cast<size_t>(length)};
@@ -253,15 +238,12 @@ class Reader {
                 return;
             if (!header_tokens_.size()) {
               current_row_ = line;
-              const auto&& header_tokens = tokenize_current_row();
+              const auto&& header_tokens = tokenize_current_row_();
               header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
-              header_available_cv_.notify_all();
               return;
             }
             lines_ += 1;
             line_strings_.push_back(std::move(line));
-            // std::cout << "Notifying one\n";
-            line_available_cv_.notify_one();
         });
     }
 
@@ -280,8 +262,7 @@ public:
             details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
             details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'}, std::forward<Args>(args)...),
             details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::trailing}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::reader_mode>(option::ReaderMode{Mode::asynchronous}, std::forward<Args>(args)...)
+            details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false}, std::forward<Args>(args)...)
         ) {
 
         auto& filename = get_value<details::CsvOption::filename>();
@@ -290,7 +271,6 @@ public:
         ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
         quote_character_ = get_value<details::CsvOption::quote_character>();
         skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
-        reader_mode_ = get_value<details::CsvOption::reader_mode>();
         auto &trim_policy = get_value<details::CsvOption::trim_policy>();
         switch(trim_policy) {
             case Trim::none:
@@ -309,39 +289,21 @@ public:
 
         // NOTE: Trimming happens at the row level and not at the field level
 
-        if (column_names.size()) {
+        if (column_names.size())
             header_tokens_ = column_names;
-            header_available_ = true;
-            header_available_cv_.notify_all();
-        }
 
         std::ios_base::sync_with_stdio(false);
         std::ifstream infile(filename);
         if (!infile.is_open())
             throw std::runtime_error("error: Failed to open " + filename);
 
-        if (reader_mode_ == Mode::asynchronous)
-            file_reader_thread_ = std::thread(&Reader::file_reader_thread_function, this, std::move(infile));
-        else
-            file_reader_thread_function(std::move(infile)); 
-    }   
-
-    ~Reader() {
-        if (reader_mode_ == Mode::asynchronous)
-            if (file_reader_thread_.joinable())
-                file_reader_thread_.join();
+        read_file_(std::move(infile)); 
     }
 
     bool read_row(Row &result) {
         if (no_more_lines_) return false;
-        // std::cout << "Waiting for line\n";
-        std::unique_lock<std::mutex> lock{line_mutex_};
-        line_available_cv_.wait(lock);
-
-        if (current_row_index_ == lines_)
-            return false;
         current_row_ = line_strings_[current_row_index_];
-        row_tokens_ = tokenize_current_row();
+        row_tokens_ = tokenize_current_row_();
         result.clear();
         for (size_t i = 0; i < header_tokens_.size(); ++i) {
             if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(), header_tokens_[i]) != ignore_columns_.end())
@@ -362,18 +324,10 @@ public:
     }
 
     size_t cols() {
-        if (!header_available_) {
-            std::unique_lock<std::mutex> lock{header_mutex_};
-            header_available_cv_.wait(lock);
-        }
         return header_tokens_.size() - get_value<details::CsvOption::ignore_columns>().size();
     }
 
     std::vector<std::string_view> header() {
-        if (!header_available_) {
-            std::unique_lock<std::mutex> lock{header_mutex_};
-            header_available_cv_.wait(lock);
-        }
         std::vector<std::string_view> result;
         for (auto& h: header_tokens_)
             result.push_back(h);
