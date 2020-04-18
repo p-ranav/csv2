@@ -28,6 +28,7 @@ class reader {
     char quote_character_;
     std::function<void(std::string &s, const std::vector<char>& t)> trim_function_;
     bool skip_initial_space_{false};
+    std::vector<std::string> ignore_columns_;
 
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
@@ -195,7 +196,6 @@ class reader {
 
     bool
     try_read_row(row &result) {
-        auto& ignore_columns = get_value<details::CsvOption::ignore_columns>();
         if (current_row_index_ < lines_) {
             if (!t_.rows_.try_dequeue(current_row_)) 
                 return false;
@@ -203,7 +203,7 @@ class reader {
 
             result.clear();
             for (size_t i = 0; i < header_.size(); ++i) {
-                if (std::find(ignore_columns.begin(), ignore_columns.end(), header_[i]) != ignore_columns.end())
+                if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(), header_[i]) != ignore_columns_.end())
                     continue;
                 if (i < row_.size()) {
                   result.insert({header_[i], row_[i]});
@@ -240,6 +240,7 @@ public:
         auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
         auto& thread_pool = get_value<details::CsvOption::thread_pool>();
         auto& column_names = get_value<details::CsvOption::column_names>();
+        ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
         quote_character_ = get_value<details::CsvOption::quote_character>();
         skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
         auto &trim_policy = get_value<details::CsvOption::trim_policy>();
