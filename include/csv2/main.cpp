@@ -4,10 +4,11 @@ using namespace csv2;
 int main(int argc, char **argv) {
   reader csv{
     option::Filename{std::string(argv[1])},
-    option::Delimiter{','},
+    option::Delimiter{' '},
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},
+    option::TrimPolicy{Trim::trailing},
     option::IgnoreColumns{std::vector<std::string>{}},
-    option::SkipEmptyRows{true}
+    option::SkipEmptyRows{true},
   };
   row_t row;
   while(csv.read_row(row)) {
