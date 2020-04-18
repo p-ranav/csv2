@@ -40,7 +40,6 @@ namespace string {
     }
 }
 
-using namespace std;
 using row = std::unordered_map<std::string_view, std::string_view>;
 
 class reader {
@@ -81,17 +80,17 @@ class reader {
     }
 
     template <typename LineHandler>
-    void read_file_fast(ifstream &file, LineHandler &&line_handler){
+    void read_file_fast(std::ifstream &file, LineHandler &&line_handler){
             int64_t buffer_size = 40000;
-            file.seekg(0,ios::end);
-            ifstream::pos_type p = file.tellg();
+            file.seekg(0, std::ios::end);
+            std::ifstream::pos_type p = file.tellg();
     #ifdef WIN32
             int64_t file_size = *(int64_t*)(((char*)&p) +8);
     #else
             int64_t file_size = p;
     #endif
-            file.seekg(0,ios::beg);
-            buffer_size = min(buffer_size, file_size);
+            file.seekg(0, std::ios::beg);
+            buffer_size = std::min(buffer_size, file_size);
             char* buffer = new char[buffer_size];
             blkcnt_t buffer_length = buffer_size;
             file.read(buffer, buffer_length);
@@ -114,7 +113,7 @@ class reader {
                     if (string_start == -1) {
                         line_handler(buffer + string_start + 1, buffer_length, buffer_position_in_file + string_start + 1);
                         buffer_position_in_file += buffer_length;
-                        buffer_length = min(buffer_length, file_size - buffer_position_in_file);
+                        buffer_length = std::min(buffer_length, file_size - buffer_position_in_file);
                         delete[]buffer;
                         buffer = new char[buffer_length];
                         file.read(buffer, buffer_length);
@@ -122,7 +121,7 @@ class reader {
                         int moved_length = buffer_length - string_start - 1;
                         memmove(buffer,buffer+string_start+1,moved_length);
                         buffer_position_in_file += string_start + 1;
-                        int readSize = min(buffer_length - moved_length, file_size - buffer_position_in_file - moved_length);
+                        int readSize = std::min(buffer_length - moved_length, file_size - buffer_position_in_file - moved_length);
 
                         if (readSize != 0)
                             file.read(buffer + moved_length, readSize);
@@ -287,7 +286,7 @@ public:
         if (column_names.size())
             header_tokens_ = column_names;
             
-        ifstream infile(filename);
+        std::ifstream infile(filename);
         if (!infile.is_open())
             throw std::runtime_error("error: Failed to open " + filename);
 
