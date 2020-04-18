@@ -6,6 +6,7 @@
 using namespace csv2;
 
 int main() {
+  // Construct a csv reader
   reader csv{
     option::Filename{std::string("foo.csv")},
     option::Delimiter{','},
@@ -17,7 +18,6 @@ int main() {
   std::cout << "Loaded " << csv.rows() << "x" << csv.cols() << " entries\n";
   
   // Iterate over each row like below:
-
   row next;
   while (csv.read_row(next)) {
     // Do something with row
