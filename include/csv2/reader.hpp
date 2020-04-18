@@ -300,7 +300,7 @@ public:
         return header_.size() - get_value<details::CsvOption::ignore_columns>().size();
     }
 
-    auto header() const {
+    std::vector<std::string_view> header() const {
         std::vector<std::string_view> result;
         for (auto& h: header_)
             result.push_back(h);
