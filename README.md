@@ -1,5 +1,12 @@
 # csv2
-`csv2` is a fast, single-threaded CSV Parser written in `C++17`
+`csv2` is a fast, single-threaded CSV Parser written in `C++17`.
+
+## Highlights
+* Blazing fast - Fast line reader coupled with generous use of `std::string_view` to minimize allocations/copies.
+* Single-threaded - No additional worker threads.
+* Lazy evaluated - Tokenization is not performed until `read_row()` is called.
+* Configurable - Set your dialect with `csv2::option`.
+* MIT License.
 
 ```cpp
 #include <csv2/reader.hpp>
@@ -25,10 +32,3 @@ int main() {
   }
 }
 ```
-
-## Highlights
-* Blazing fast - Fast line reader coupled with generous use of `std::string_view` to minimize allocations/copies.
-* Single-threaded - No additional worker threads.
-* Lazy evaluated - Tokenization is not performed until `read_row()` is called.
-* Configurable - Set your dialect with `csv2::option`.
-* MIT License.
