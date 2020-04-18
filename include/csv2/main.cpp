@@ -10,11 +10,11 @@ int main(int argc, char **argv) {
     option::TrimPolicy{Trim::trailing}
   };
 
-  // Row next;
-  // while (csv.read_row(next)) {
-  //   // for (auto& [k, v]: next)
-  //   //     std::cout << k << ":" << v << ";";
-  //   // std::cout << "\n";
-  // }
+  Row next;
+  while (csv.read_row(next)) {
+    // for (auto& [k, v]: next)
+    //     std::cout << k << ":" << v << ";";
+    // std::cout << "\n";
+  }
   std::cout << "Loaded " << csv.rows() << "x" << csv.cols() << " entries\n";
 }

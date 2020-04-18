@@ -54,6 +54,7 @@ class Reader {
     std::function<void(std::string &s, const std::vector<char>& t)> trim_function_;
     bool skip_initial_space_{false};
     std::vector<std::string> ignore_columns_;
+    std::atomic_bool no_more_lines_{false};
 
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
@@ -78,7 +79,7 @@ class Reader {
     }
 
     template <typename LineHandler>
-    void read_file_fast(std::ifstream &file, LineHandler &&line_handler){
+    void read_file_fast_(std::ifstream &file, LineHandler &&line_handler){
             int64_t buffer_size = 40000;
             file.seekg(0, std::ios::end);
             std::ifstream::pos_type p = file.tellg();
@@ -145,7 +146,7 @@ class Reader {
         QuotedQuote
     };
 
-    std::vector<std::string_view> tokenize_current_row() {
+    std::vector<std::string_view> tokenize_current_row_() {
         CSVState state = CSVState::UnquotedField;
         std::vector<std::string_view> fields;
         size_t i = 0; // index of the current field
@@ -217,6 +218,31 @@ class Reader {
         return fields;
     }
 
+    void read_file_(std::ifstream infile) {
+        auto& trim_characters = get_value<details::CsvOption::trim_characters>();
+        auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
+
+        read_file_fast_(infile, [&, this](char*buffer, int length, int64_t position) -> void {
+            if (!buffer) {
+                no_more_lines_ = true;
+                return;
+            }
+            auto line = std::string{buffer, static_cast<size_t>(length)};
+            if (trim_function_)
+                trim_function_(line, trim_characters);
+            if (skip_empty_rows && line.empty())
+                return;
+            if (!header_tokens_.size()) {
+              current_row_ = line;
+              const auto&& header_tokens = tokenize_current_row_();
+              header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
+              return;
+            }
+            lines_ += 1;
+            line_strings_.push_back(std::move(line));
+        });
+    }
+
 public:
     template <typename... Args,
             typename std::enable_if<details::are_settings_from_tuple<
@@ -234,9 +260,8 @@ public:
             details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::trailing}, std::forward<Args>(args)...),
             details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false}, std::forward<Args>(args)...)
         ) {
+
         auto& filename = get_value<details::CsvOption::filename>();
-        auto& trim_characters = get_value<details::CsvOption::trim_characters>();
-        auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
         auto& column_names = get_value<details::CsvOption::column_names>();
         delimiter_ = get_value<details::CsvOption::delimiter>();
         ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
@@ -262,34 +287,19 @@ public:
 
         if (column_names.size())
             header_tokens_ = column_names;
-            
+
+        std::ios_base::sync_with_stdio(false);
         std::ifstream infile(filename);
         if (!infile.is_open())
             throw std::runtime_error("error: Failed to open " + filename);
 
-        read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
-            if (!buffer) return;
-            auto line = std::string{buffer, static_cast<size_t>(length)};
-            if (trim_function_)
-                trim_function_(line, trim_characters);
-            if (skip_empty_rows && line.empty())
-                return;
-            if (!header_tokens_.size()) {
-              current_row_ = line;
-              const auto&& header_tokens = tokenize_current_row();
-              header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
-              return;
-            }
-            lines_ += 1;
-            line_strings_.push_back(std::move(line));
-        });
+        read_file_(std::move(infile)); 
     }
 
     bool read_row(Row &result) {
-        if (current_row_index_ == lines_)
-            return false;
+        if (no_more_lines_) return false;
         current_row_ = line_strings_[current_row_index_];
-        row_tokens_ = tokenize_current_row();
+        row_tokens_ = tokenize_current_row_();
         result.clear();
         for (size_t i = 0; i < header_tokens_.size(); ++i) {
             if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(), header_tokens_[i]) != ignore_columns_.end())
