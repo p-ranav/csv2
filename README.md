@@ -7,14 +7,14 @@ using namespace csv2;
 
 int main() {
 
-  reader csv{
+  Reader csv{
     option::Filename{std::string("foo.csv")},
     option::Delimiter{','},
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},
     option::TrimPolicy{Trim::trailing}
   };
   
-  row next;
+  Row next;
   while (csv.read_row(next)) {
     // Do something with row
   }
