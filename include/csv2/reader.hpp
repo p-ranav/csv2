@@ -47,8 +47,8 @@ class reader {
     // task_system t_;
     size_t lines_{0};
     std::vector<std::string> line_strings_;
-    std::vector<std::string> header_;
-    std::vector<std::string_view> row_;
+    std::vector<std::string> header_tokens_;
+    std::vector<std::string_view> row_tokens_;
     std::string empty_{""};
     std::string_view current_row_;
     size_t current_row_index_{0};
@@ -225,19 +225,16 @@ class reader {
     try_read_row(row &result) {
         if (current_row_index_ < lines_) {
             current_row_ = line_strings_[current_row_index_];
-            // if (!line_strings_.try_dequeue(current_row_)) 
-            //     return false;
-            row_ = tokenize_current_row();
-
+            row_tokens_ = tokenize_current_row();
             result.clear();
-            for (size_t i = 0; i < header_.size(); ++i) {
-                if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(), header_[i]) != ignore_columns_.end())
+            for (size_t i = 0; i < header_tokens_.size(); ++i) {
+                if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(), header_tokens_[i]) != ignore_columns_.end())
                     continue;
-                if (i < row_.size()) {
-                  result.insert({header_[i], row_[i]});
+                if (i < row_tokens_.size()) {
+                  result.insert({header_tokens_[i], row_tokens_[i]});
                 }
                 else {
-                  result.insert({header_[i], empty_});
+                  result.insert({header_tokens_[i], empty_});
                 }
             }
             return true;
@@ -291,12 +288,12 @@ public:
         // NOTE: Trimming happens at the row level and not at the field level
 
         if (column_names.size())
-            header_ = column_names;
+            header_tokens_ = column_names;
+            
         ifstream infile(filename);
         if (!infile.is_open())
             throw std::runtime_error("error: Failed to open " + filename);
-        // t_.resize(thread_pool);
-        // t_.start();
+
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
             auto line = std::string{buffer, static_cast<size_t>(length)};
@@ -304,17 +301,15 @@ public:
                 trim_function_(line, trim_characters);
             if (skip_empty_rows && line.empty())
                 return;
-            if (!header_.size()) {
+            if (!header_tokens_.size()) {
               current_row_ = line;
-              const auto header_tokens = tokenize_current_row();
-              header_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
+              const auto&& header_tokens = tokenize_current_row();
+              header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
               return;
             }
             lines_ += 1;
             line_strings_.push_back(std::move(line));
-            // t_.async_(std::move(current_row_));
         });
-        // t_.stop();
     }
 
     bool read_row(row &result) {
@@ -330,12 +325,12 @@ public:
     }
 
     size_t cols() const {
-        return header_.size() - get_value<details::CsvOption::ignore_columns>().size();
+        return header_tokens_.size() - get_value<details::CsvOption::ignore_columns>().size();
     }
 
     std::vector<std::string_view> header() const {
         std::vector<std::string_view> result;
-        for (auto& h: header_)
+        for (auto& h: header_tokens_)
             result.push_back(h);
         return result;
     }
