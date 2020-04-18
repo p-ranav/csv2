@@ -13,10 +13,6 @@
 #include <cctype>
 #include <locale>
 #include <string>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <iostream>
 
 namespace csv2 {
 
