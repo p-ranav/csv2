@@ -65,7 +65,6 @@ class reader {
         option::IgnoreColumns,
         option::SkipEmptyRows,
         option::QuoteCharacter,
-        option::ThreadPool,
         option::TrimPolicy,
         option::SkipInitialSpace>;
     Settings settings_;
@@ -256,14 +255,12 @@ public:
             details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{}, std::forward<Args>(args)...),
             details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
             details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::thread_pool>(option::ThreadPool{1}, std::forward<Args>(args)...),
             details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::trailing}, std::forward<Args>(args)...),
             details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false}, std::forward<Args>(args)...)
         ) {
         auto& filename = get_value<details::CsvOption::filename>();
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
         auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
-        auto& thread_pool = get_value<details::CsvOption::thread_pool>();
         auto& column_names = get_value<details::CsvOption::column_names>();
         delimiter_ = get_value<details::CsvOption::delimiter>();
         ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
