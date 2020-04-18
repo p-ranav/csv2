@@ -19,7 +19,7 @@ int main() {
   // split into lines (std::vector<std::string>)
   
   // Row is a std::unordered_map<std::string_view, std::string_view>
-  // of key-value pairs
+  // of key-value pairs. Use `read_row` to iterate over rows in the csv
   Row next;
   while (csv.read_row(next)) {
     // Do something with row
