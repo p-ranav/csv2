@@ -24,7 +24,7 @@ class reader {
     std::string empty_{""};
     std::string current_row_;
     size_t current_row_index_{0};
-    const char quote_character_;
+    char quote_character_;
 
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
