@@ -319,11 +319,11 @@ public:
         return lines_;
     }
 
-    size_t cols() {
+    size_t cols() const {
         return header_tokens_.size() - get_value<details::CsvOption::ignore_columns>().size();
     }
 
-    std::vector<std::string_view> header() {
+    std::vector<std::string_view> header() const {
         std::vector<std::string_view> result;
         for (auto& h: header_tokens_)
             result.push_back(h);
