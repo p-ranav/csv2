@@ -26,6 +26,7 @@ class reader {
     size_t current_row_index_{0};
     char quote_character_;
     std::function<void(std::string &s, const std::vector<char>& t)> trim_function_;
+    bool skip_initial_space_{false};
 
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
@@ -35,7 +36,8 @@ class reader {
         option::SkipEmptyRows,
         option::QuoteCharacter,
         option::ThreadPool,
-        option::TrimPolicy>;
+        option::TrimPolicy,
+        option::SkipInitialSpace>;
     Settings settings_;
 
     template <details::CsvOption id>
@@ -131,8 +133,15 @@ class reader {
             switch (state) {
                 case CSVState::UnquotedField:
                     if (c == delimiter) {
+                        // Check for initial space right after delimiter
+                        size_t initial_space_offset{0};
+                        if (skip_initial_space_ && j + 1 < current_row_.size() && current_row_[j + 1] == ' ') {
+                            initial_space_offset = 1;
+                            j++;
+                        }
+
                         fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
-                        field_start = field_end + 1; // start after delimiter
+                        field_start = field_end + 1 + initial_space_offset; // start after delimiter
                         field_end = field_start; // reset interval
                         i++;
                     } else if (c == quote_character_) {
@@ -158,8 +167,15 @@ class reader {
                     break;
                 case CSVState::QuotedQuote:
                     if (c == delimiter) { // , after closing quote
+                        // Check for initial space right after delimiter
+                        size_t initial_space_offset{0};
+                        if (skip_initial_space_ && j + 1 < current_row_.size() && current_row_[j + 1] == ' ') {
+                            initial_space_offset = 1;
+                            j++;
+                        }
+
                         fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
-                        field_start = field_end + 1; // start after delimiter
+                        field_start = field_end + 1 + initial_space_offset; // start after delimiter
                         field_end = field_start; // reset interval
                         i++;
                         state = CSVState::UnquotedField;
@@ -215,7 +231,8 @@ public:
             details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
             details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'}, std::forward<Args>(args)...),
             details::get<details::CsvOption::thread_pool>(option::ThreadPool{1}, std::forward<Args>(args)...),
-            details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::trailing}, std::forward<Args>(args)...)
+            details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::trailing}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false}, std::forward<Args>(args)...)
         ) {
         auto& filename = get_value<details::CsvOption::filename>();
         auto& trim_characters = get_value<details::CsvOption::trim_characters>();
@@ -223,6 +240,7 @@ public:
         auto& thread_pool = get_value<details::CsvOption::thread_pool>();
         auto& column_names = get_value<details::CsvOption::column_names>();
         quote_character_ = get_value<details::CsvOption::quote_character>();
+        skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
         auto &trim_policy = get_value<details::CsvOption::trim_policy>();
         switch(trim_policy) {
             case Trim::none:
