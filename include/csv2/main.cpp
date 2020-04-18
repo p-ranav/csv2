@@ -7,8 +7,7 @@ int main(int argc, char **argv) {
     option::Delimiter{' '},
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},
     option::IgnoreColumns{std::vector<std::string>{}},
-    option::SkipEmptyRows{true} //,
-    //option::ThreadPool{std::thread::hardware_concurrency()}
+    option::SkipEmptyRows{true}
   };
   row_t row;
   while(csv.read_row(row)) {

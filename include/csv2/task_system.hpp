@@ -1,19 +1,37 @@
 #pragma once
 #include <atomic>
 #include <condition_variable>
-#include <csv2/notification_queue.hpp>
 #include <thread>
 #include <vector>
 #include <optional>
 #include <iostream>
 #include <unordered_map>
+#include <csv2/external/concurrentqueue/concurrentqueue.h>
 
 namespace csv2 {
+
+using line_t = std::string;
+
+class line_queue {
+  moodycamel::ConcurrentQueue<line_t> queue_;
+  moodycamel::ProducerToken ptok{queue_};
+  moodycamel::ConsumerToken ctok{queue_};
+
+public:
+  bool try_dequeue(std::optional<line_t> &op) {
+    return queue_.try_dequeue(ctok, op);
+  }
+
+  template <typename Record> 
+  bool enqueue(Record &&record) {
+    return queue_.enqueue(ptok, record);
+  }
+};
 
 class task_system {
   unsigned count_;
   std::vector<std::thread> threads_;
-  std::vector<notification_queue> queue_;
+  std::vector<line_queue> queue_;
   std::atomic<unsigned> index_{0};
   std::atomic_bool no_more_tasks_{false};
   moodycamel::ConcurrentQueue<std::string> rows_;
@@ -22,7 +40,7 @@ class task_system {
 
   void run(unsigned i) {
     while (true) {
-      std::optional<record_t> op;
+      std::optional<line_t> op;
       for (unsigned n = 0; n != count_; ++n) {
         if (queue_[(i + n) % count_].try_dequeue(op))
           break;
