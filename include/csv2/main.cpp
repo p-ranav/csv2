@@ -2,7 +2,7 @@
 using namespace csv2;
 
 int main(int argc, char **argv) {
-  reader csv{
+  Reader csv{
     option::Filename{std::string(argv[1])},
     option::Delimiter{','},
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},

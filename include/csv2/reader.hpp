@@ -40,9 +40,9 @@ namespace string {
     }
 }
 
-using row = std::unordered_map<std::string_view, std::string_view>;
+using Row  = std::unordered_map<std::string_view, std::string_view>;
 
-class reader {
+class Reader {
     size_t lines_{0};
     std::vector<std::string> line_strings_;
     std::vector<std::string> header_tokens_;
@@ -219,7 +219,7 @@ class reader {
     }
 
     bool
-    try_read_row(row &result) {
+    try_read_row(Row &result) {
         if (current_row_index_ < lines_) {
             current_row_ = line_strings_[current_row_index_];
             row_tokens_ = tokenize_current_row();
@@ -244,7 +244,7 @@ public:
             typename std::enable_if<details::are_settings_from_tuple<
                                         Settings, typename std::decay<Args>::type...>::value,
                                     void *>::type = nullptr>
-    reader(Args &&... args)
+    Reader(Args &&... args)
         : settings_(
             details::get<details::CsvOption::filename>(option::Filename{""}, std::forward<Args>(args)...),
             details::get<details::CsvOption::delimiter>(option::Delimiter{','}, std::forward<Args>(args)...),
@@ -307,7 +307,7 @@ public:
         });
     }
 
-    bool read_row(row &result) {
+    bool read_row(Row &result) {
         if (current_row_index_ == lines_)
             return false;
         try_read_row(result);
