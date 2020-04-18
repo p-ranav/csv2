@@ -24,6 +24,7 @@ class reader {
     std::string empty_{""};
     std::string current_row_;
     size_t current_row_index_{0};
+    const char quote_character_;
 
     using Settings = std::tuple<option::Filename, 
         option::Delimiter, 
@@ -31,6 +32,7 @@ class reader {
         option::ColumnNames,
         option::IgnoreColumns,
         option::SkipEmptyRows,
+        option::QuoteCharacter,
         option::ThreadPool>;
     Settings settings_;
 
@@ -131,7 +133,7 @@ class reader {
                         field_start = field_end + 1; // start after delimiter
                         field_end = field_start; // reset interval
                         i++;
-                    } else if (c == '"') {
+                    } else if (c == quote_character_) {
                         field_end += 1;
                         state = CSVState::QuotedField;
                     } else {
@@ -142,7 +144,7 @@ class reader {
                     }
                     break;
                 case CSVState::QuotedField:
-                    if (c == '"') {
+                    if (c == quote_character_) {
                         field_end += 1;
                         state = CSVState::QuotedQuote;
                         if (j + 1 == current_row_.size()) { // last entry
@@ -159,8 +161,7 @@ class reader {
                         field_end = field_start; // reset interval
                         i++;
                         state = CSVState::UnquotedField;
-                    } else if (c == '"') { // "" -> "
-                        // fields[i].push_back('"');
+                    } else if (c == quote_character_) { // "" -> "
                         field_end += 1;
                         state = CSVState::QuotedField;
                     } else {
@@ -210,6 +211,7 @@ public:
             details::get<details::CsvOption::column_names>(option::ColumnNames{}, std::forward<Args>(args)...),
             details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{}, std::forward<Args>(args)...),
             details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false}, std::forward<Args>(args)...),
+            details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'}, std::forward<Args>(args)...),
             details::get<details::CsvOption::thread_pool>(option::ThreadPool{1}, std::forward<Args>(args)...)
         ) {
         auto& filename = get_value<details::CsvOption::filename>();
@@ -217,6 +219,7 @@ public:
         auto& skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
         auto& thread_pool = get_value<details::CsvOption::thread_pool>();
         auto& column_names = get_value<details::CsvOption::column_names>();
+        quote_character_ = get_value<details::CsvOption::quote_character>();
         if (column_names.size())
             header_ = column_names;
         ifstream infile(filename);

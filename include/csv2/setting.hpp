@@ -72,6 +72,7 @@ enum class CsvOption {
   column_names,
   ignore_columns,
   skip_empty_rows,
+  quote_character,
   thread_pool
 };
 
@@ -173,6 +174,7 @@ using TrimCharacters = details::Setting<std::vector<char>, details::CsvOption::t
 using ColumnNames = details::Setting<std::vector<std::string>, details::CsvOption::column_names>;
 using IgnoreColumns = details::Setting<std::vector<std::string>, details::CsvOption::ignore_columns>;
 using SkipEmptyRows = details::BooleanSetting<details::CsvOption::skip_empty_rows>;
+using QuoteCharacter = details::CharSetting<details::CsvOption::quote_character>;
 using ThreadPool = details::IntegerSetting<details::CsvOption::thread_pool>;
 } // namespace option
 } // namespace csv2
