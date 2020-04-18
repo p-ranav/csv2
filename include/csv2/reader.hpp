@@ -119,16 +119,16 @@ class Reader {
                         int moved_length = buffer_length - string_start - 1;
                         memmove(buffer,buffer+string_start+1,moved_length);
                         buffer_position_in_file += string_start + 1;
-                        int readSize = std::min(buffer_length - moved_length, file_size - buffer_position_in_file - moved_length);
+                        int read_size = std::min(buffer_length - moved_length, file_size - buffer_position_in_file - moved_length);
 
-                        if (readSize != 0)
-                            file.read(buffer + moved_length, readSize);
-                        if (moved_length + readSize < buffer_length) {
-                            char *temp_buffer = new char[moved_length + readSize];
-                            memmove(temp_buffer,buffer,moved_length+readSize);
+                        if (read_size != 0)
+                            file.read(buffer + moved_length, read_size);
+                        if (moved_length + read_size < buffer_length) {
+                            char *temp_buffer = new char[moved_length + read_size];
+                            memmove(temp_buffer,buffer,moved_length+read_size);
                             delete[]buffer;
                             buffer = temp_buffer;
-                            buffer_length = moved_length + readSize;
+                            buffer_length = moved_length + read_size;
                         }
                         string_end = -1;
                     }
