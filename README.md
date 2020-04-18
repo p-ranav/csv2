@@ -1,5 +1,5 @@
 # csv2
-`csv2` is a fast, single-threaded, and lazy CSV Parser written in `C++17`
+`csv2` is a fast, single-threaded CSV Parser written in `C++17`
 
 ```cpp
 #include <csv2/reader.hpp>
