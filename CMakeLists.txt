@@ -18,8 +18,6 @@ option(CSV2_DEMO "Build csv2 demo" OFF)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
-find_package(Threads REQUIRED)
-
 add_library(csv2 INTERFACE)
 add_library(csv2::csv2 ALIAS csv2)
 
@@ -27,7 +25,6 @@ target_compile_features(csv2 INTERFACE cxx_std_17)
 target_include_directories(csv2 INTERFACE
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-target_link_libraries(csv2 INTERFACE Threads::Threads)
 
 if(CSV2_TEST)
   add_subdirectory(test)

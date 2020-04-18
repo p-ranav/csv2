@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cctype>
 #include <locale>
+#include <vector>
 
 // trim from start (in place)
 static inline void ltrim(std::string &s, const std::vector<char>& t) {

@@ -2,33 +2,55 @@
 #include <string>
 #include <fstream>
 #include <iostream>
-#include <csv2/task_system.hpp>
 #include <algorithm>
 #include <cmath>
 #include <string_view>
-#include <csv2/string_utils.hpp>
 #include <cstring>
 #include <csv2/setting.hpp>
 #include <tuple>
 #include <functional>
-
-#include <chrono>
-using namespace std;
-using namespace std::chrono; 
-
+#include <unordered_map>
+#include <vector>
+#include <cctype>
+#include <locale>
+#include <string>
 
 namespace csv2 {
+
+namespace string {
+
+    // trim from start (in place)
+    static inline void ltrim(std::string &s, const std::vector<char>& t) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [&t](int ch) {
+            return std::find(t.begin(), t.end(), ch) == t.end();
+        }));
+    }
+
+    // trim from end (in place)
+    static inline void rtrim(std::string &s, const std::vector<char>& t) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [&t](int ch) {
+            return std::find(t.begin(), t.end(), ch) == t.end();
+        }).base(), s.end());
+    }
+
+    // trim from both ends (in place)
+    static inline void trim(std::string &s, const std::vector<char>& t) {
+        ltrim(s, t);
+        rtrim(s, t);
+    }
+}
 
 using namespace std;
 using row = std::unordered_map<std::string_view, std::string_view>;
 
 class reader {
-    task_system t_;
+    // task_system t_;
     size_t lines_{0};
+    std::vector<std::string> line_strings_;
     std::vector<std::string> header_;
     std::vector<std::string_view> row_;
     std::string empty_{""};
-    std::string current_row_;
+    std::string_view current_row_;
     size_t current_row_index_{0};
     char delimiter_;
     char quote_character_;
@@ -147,7 +169,7 @@ class reader {
                             j++;
                         }
 
-                        fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
+                        fields.push_back(current_row_.substr(field_start, field_end - field_start));
                         field_start = field_end + 1 + initial_space_offset; // start after delimiter
                         field_end = field_start; // reset interval
                         i++;
@@ -157,7 +179,7 @@ class reader {
                     } else {
                         field_end += 1;
                         if (j + 1 == current_row_.size()) { // last entry
-                            fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
+                            fields.push_back(current_row_.substr(field_start, field_end - field_start));
                         }
                     }
                     break;
@@ -166,7 +188,7 @@ class reader {
                         field_end += 1;
                         state = CSVState::QuotedQuote;
                         if (j + 1 == current_row_.size()) { // last entry
-                            fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
+                            fields.push_back(current_row_.substr(field_start, field_end - field_start));
                         }
                     } else {
                         field_end += 1;
@@ -181,7 +203,7 @@ class reader {
                             j++;
                         }
 
-                        fields.push_back(std::string_view(current_row_).substr(field_start, field_end - field_start));
+                        fields.push_back(current_row_.substr(field_start, field_end - field_start));
                         field_start = field_end + 1 + initial_space_offset; // start after delimiter
                         field_end = field_start; // reset interval
                         i++;
@@ -202,8 +224,9 @@ class reader {
     bool
     try_read_row(row &result) {
         if (current_row_index_ < lines_) {
-            if (!t_.rows_.try_dequeue(current_row_)) 
-                return false;
+            current_row_ = line_strings_[current_row_index_];
+            // if (!line_strings_.try_dequeue(current_row_)) 
+            //     return false;
             row_ = tokenize_current_row();
 
             result.clear();
@@ -255,13 +278,13 @@ public:
                 trim_function_ = {};
                 break;
             case Trim::leading:
-                trim_function_ = ltrim;
+                trim_function_ = string::ltrim;
                 break;
             case Trim::trailing:
-                trim_function_ = rtrim;
+                trim_function_ = string::rtrim;
                 break;
             case Trim::leading_and_trailing:
-                trim_function_ = trim;
+                trim_function_ = string::trim;
                 break;
         }
 
@@ -272,30 +295,32 @@ public:
         ifstream infile(filename);
         if (!infile.is_open())
             throw std::runtime_error("error: Failed to open " + filename);
-        t_.resize(thread_pool);
-        t_.start();
+        // t_.resize(thread_pool);
+        // t_.start();
         read_file_fast(infile, [&, this](char*buffer, int length, int64_t position) -> void {
             if (!buffer) return;
-            current_row_ = std::string{buffer, static_cast<size_t>(length)};
+            auto line = std::string{buffer, static_cast<size_t>(length)};
             if (trim_function_)
-                trim_function_(current_row_, trim_characters);
-            if (skip_empty_rows && current_row_.empty())
+                trim_function_(line, trim_characters);
+            if (skip_empty_rows && line.empty())
                 return;
             if (!header_.size()) {
+              current_row_ = line;
               const auto header_tokens = tokenize_current_row();
               header_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
               return;
             }
             lines_ += 1;
-            t_.async_(std::move(current_row_));
+            line_strings_.push_back(std::move(line));
+            // t_.async_(std::move(current_row_));
         });
-        t_.stop();
+        // t_.stop();
     }
 
     bool read_row(row &result) {
         if (current_row_index_ == lines_)
             return false;
-        while (!try_read_row(result)) {}
+        try_read_row(result);
         current_row_index_ += 1;
         return true;
     }

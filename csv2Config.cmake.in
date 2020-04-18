@@ -2,8 +2,6 @@
 
 include(CMakeFindDependencyMacro)
 
-find_dependency(Threads REQUIRED)
-
 if (NOT TARGET csv2::csv2)
   include(${CMAKE_CURRENT_LIST_DIR}/csv2Targets.cmake)
 endif ()
