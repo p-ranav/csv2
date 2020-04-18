@@ -12,12 +12,16 @@ int main() {
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},
     option::TrimPolicy{Trim::trailing}
   };
+  
+  // At this point, all the data is already loaded.
+  std::cout << "Loaded " << csv.rows() << "x" << csv.cols() << " entries\n";
+  
+  // Iterate over each row like below:
 
-  row next; // unordered_map<string_view, string_view>
+  row next;
   while (csv.read_row(next)) {
     // Do something with row
   }
-  // No more rows
 }
 ```
 
