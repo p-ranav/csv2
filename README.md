@@ -24,6 +24,6 @@ int main() {
 ## Highlights
 * Single header file - Just include `csv2/reader.hpp`
 * Blazing fast - Fast file reader coupled with generous use of `std::string_view` to minimize allocations/copies.
-* Single-threaded - Runs entirely in the thread in which you're creating the `csv2::reader`.
-* Configurable 
+* Single-threaded - No additional worker threads
+* Configurable - Set your dialect with `csv2::option`
 * MIT License
