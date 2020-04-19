@@ -122,8 +122,8 @@ TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
 
   std::vector<ExpectedRow> values{ExpectedRow{
     {"\"a\"", "1"}, 
-    {"\"b\nc\"", "2"}, 
-    {"\"c\"", "3"}}};
+    {"\"b\\nc\"", "2"}, 
+    {"\"d\"", "3"}}};
 
   size_t i = 0;
   Row row;
