@@ -8,6 +8,7 @@
 * Blazing fast - Fast line reader coupled with generous use of `std::string_view` to minimize allocations/copies.
 * Single-threaded - No additional worker threads.
 * Lazy evaluated - Tokenization is not performed until `read_row()` is called.
+* Single header file - Just include `<csv2/reader.hpp>`
 * MIT License.
 
 ```cpp
@@ -57,14 +58,14 @@ g++ -I../include -O3 -std=c++17 main main.cpp
 ./main <csv_file>
 ```
 
-### Measurement
+The execution time reported below is the average time taken to parse an input CSV file, running on the following hardware:
 
-The execution time reported below is the average time taken to parse the input CSV file, running on the following hardware:
-
-* MacBook Pro (15-inch, 2019)
-* Processor: 2.4 GHz 8-Core Intel Core i9
-* Memory: 32 GB 2400 MHz DDR4
-* Operating System: macOS Catalina version 10.15.3
+```
+MacBook Pro (15-inch, 2019)
+Processor: 2.4 GHz 8-Core Intel Core i9
+Memory: 32 GB 2400 MHz DDR4
+Operating System: macOS Catalina version 10.15.3
+```
 
 | Dataset | File Size | Rows | Cols | Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|
