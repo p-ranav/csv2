@@ -39,10 +39,11 @@ Compile `benchmark/main.cpp` using:
 
 ```bash
 cd benchmark
-g++ -I../include -O3 -std=c++17 main main.cpp 
+g++ -I../include -O3 -std=c++17 main main.cpp
+./main <csv_file>
 ```
 
-The goal is to access execution time of this program against a number of CSV datasets, performing two key actions:
+The goal is to access execution time of this program performing two key actions:
 
 1. Load file from disk
 2. Iterate over all rows in CSV
