@@ -281,20 +281,17 @@ class Reader {
           (current_row_[end] != delimiter_ || (current_row_[end] == delimiter_ && quote_opened))) {
       // loop, all good
       if (current_row_[end] == quote_character_) {
-        if (!quote_opened) quote_opened = true;
+        quote_opened = true;
 
-        // Quote opened either for the first time or previously
-        if (quote_opened) {
-          // quote already opened
-          // This could either be a closing quote or an escaped quote
-          if (end + 1 < current_row_.size() && current_row_[end + 1] == quote_character_) {
-            // escaped quote
-            // keep quote opened
-          } else if (end + 1 < current_row_.size() && current_row_[end + 1] == delimiter_) {
-            quote_opened = false;
-            end += 1;
-            return true;
-          }
+        // quote already opened
+        // This could either be a closing quote or an escaped quote
+        if (end + 1 < current_row_.size() && current_row_[end + 1] == quote_character_) {
+          // escaped quote
+          // keep quote opened
+        } else if (end + 1 < current_row_.size() && current_row_[end + 1] == delimiter_) {
+          quote_opened = false;
+          end += 1;
+          return true;
         }
 
         // Check if previous character was also a quote
