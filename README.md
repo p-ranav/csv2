@@ -51,7 +51,7 @@ The goal is to access execution time of this program performing two key actions:
 Here are the results:
 
 | Dataset | File Size | Rows | Cols | Time |
-|:---     |       ---:|  ---:|  ---:|  ---:|  ---:|
+|:---     |       ---:|  ---:|  ---:|  ---:|
 | [Bitcoin tweets - 16M tweets](https://www.kaggle.com/alaix14/bitcoin-tweets-20160101-to-20190329) | 4 GB | 47,478,748 | 9 | 8.889s |
 | [Seattle Checkouts by Title](https://www.kaggle.com/city-of-seattle/seattle-checkouts-by-title) | 7.1 GB | 34,892,623 | 11 | 12.496s |
 
