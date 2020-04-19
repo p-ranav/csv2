@@ -401,19 +401,21 @@ public:
             details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false},
                                                                  std::forward<Args>(args)...)) {
     const auto &filename = get_value<details::CsvOption::filename>();
-    const auto &column_names = get_value<details::CsvOption::column_names>();
+    header_tokens_ = get_value<details::CsvOption::column_names>();
     delimiter_ = get_value<details::CsvOption::delimiter>();
     ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
     quote_character_ = get_value<details::CsvOption::quote_character>();
     skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
 
-    // NOTE: Trimming happens at the row level and not at the field level
-
-    if (column_names.size())
-      header_tokens_ = column_names;
+    // Large I/O buffer to speed up ifstream read
+    const uint64_t stream_buffer_size = 1000000;
+    char stream_buffer[stream_buffer_size];
 
     std::ios_base::sync_with_stdio(false);
-    std::ifstream infile(filename);
+    std::ifstream infile;
+    infile.rdbuf()->pubsetbuf(stream_buffer, stream_buffer_size);
+    infile.open(filename);
+
     if (!infile.is_open())
       throw std::runtime_error("error: Failed to open file " + filename);
 
