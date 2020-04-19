@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
   
   Reader csv{
     option::Filename{std::string(argv[1])},
-    option::Delimiter{';'},
+    option::Delimiter{','},
     option::SkipInitialSpace{true},
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},
     option::TrimPolicy{Trim::trailing}
