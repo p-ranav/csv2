@@ -192,7 +192,6 @@ class Reader {
   char quote_character_;
   bool skip_initial_space_{false};
   std::vector<std::string> ignore_columns_;
-  std::atomic_bool no_more_lines_{false};
   const std::vector<char> trim_characters_{'\n', '\r'};
 
   using Settings = std::tuple<option::Filename, option::Delimiter,
@@ -343,6 +342,8 @@ class Reader {
             line_strings_[current_row_index_] = line_strings_[current_row_index_].erase(field_end, 1);
             current_row_ = header_string_;
           }
+          std::cout << "Updated current row: " << current_row_ << std::endl;
+          std::cout << "  current substr: " << current_row_.substr(field_start, field_end - field_start) << std::endl;
           j = j - 1; // update index since 1 quote character has been removed
           state = CSVState::QuotedField;
         } else {
@@ -359,10 +360,7 @@ class Reader {
     const auto &skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
 
     read_file_fast_(infile, [&, this](char *buffer, int length) -> void {
-      if (!buffer) {
-        no_more_lines_ = true;
-        return;
-      }
+      if (!buffer) return;
       auto line = std::string{buffer, static_cast<size_t>(length)};
       string::rtrim(line, trim_characters_);
       if (skip_empty_rows && line.empty())
@@ -423,7 +421,7 @@ public:
   }
 
   bool read_row(Row &result) {
-    if (no_more_lines_)
+    if (current_row_index_ >= line_strings_.size())
       return false;
     current_row_ = line_strings_[current_row_index_];
     row_tokens_ = tokenize_current_row_();
@@ -454,6 +452,7 @@ public:
       result.push_back(h);
     return result;
   }
+
 };
 
 } // namespace csv2

@@ -100,7 +100,7 @@ TEST_CASE("Parse row with double quotes" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_05.csv"}};
+  Reader csv{option::Filename{"inputs/test_04.csv"}};
 
   std::vector<ExpectedRow> values{ExpectedRow{
     {"a", "'Free trip to A,B'"}, 
