@@ -243,8 +243,7 @@ class Reader {
 
       if (string_end == -1) { // scroll buffer
         if (string_start == -1) {
-          line_handler(buffer + string_start + 1, buffer_length,
-                       buffer_position_in_file + string_start + 1);
+          line_handler(buffer + string_start + 1, buffer_length);
           buffer_position_in_file += buffer_length;
           buffer_length = std::min(buffer_length, file_size - buffer_position_in_file);
           delete[] buffer;
@@ -269,11 +268,10 @@ class Reader {
           string_end = -1;
         }
       } else {
-        line_handler(buffer + string_start + 1, string_end - string_start,
-                     buffer_position_in_file + string_start + 1);
+        line_handler(buffer + string_start + 1, string_end - string_start);
       }
     }
-    line_handler(0, 0, 0); // eof
+    line_handler(0, 0); // eof
   }
 
   enum class CSVState { UnquotedField, QuotedField, QuotedQuote };
@@ -360,7 +358,7 @@ class Reader {
   void read_file_(std::ifstream infile) {
     const auto &skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
 
-    read_file_fast_(infile, [&, this](char *buffer, int length, int64_t position) -> void {
+    read_file_fast_(infile, [&, this](char *buffer, int length) -> void {
       if (!buffer) {
         no_more_lines_ = true;
         return;
