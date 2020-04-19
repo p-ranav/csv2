@@ -1,14 +1,11 @@
-#include <iostream>
 #include <csv2/reader.hpp>
+#include <iostream>
 using namespace csv2;
 
 int main(int argc, char **argv) {
-  Reader csv{
-    option::Filename{std::string(argv[1])},
-    option::Delimiter{','},
-    option::TrimCharacters{std::vector<char>{'\n', '\r'}},
-    option::TrimPolicy{Trim::trailing}
-  };
+  Reader csv{option::Filename{std::string(argv[1])}, option::Delimiter{','},
+             option::TrimCharacters{std::vector<char>{'\n', '\r'}},
+             option::TrimPolicy{Trim::trailing}};
 
   Row next;
   while (csv.read_row(next)) {
