@@ -66,7 +66,6 @@ The execution time reported below is the average time taken to parse the input C
 * Memory: 32 GB 2400 MHz DDR4
 * Operating System: macOS Catalina version 10.15.3
 
-### Execution Times
 | Dataset | File Size | Rows | Cols | Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|
 | [2015 Flight Delays and Cancellations](https://www.kaggle.com/usdot/flight-delays) | 574 MB | 5,819,079 | 31 | 1.253s |
