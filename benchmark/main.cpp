@@ -39,5 +39,4 @@ int main(int argc, char **argv) {
   std::cout << "Microseconds: " << duration_us.count() << " us\n";
   std::cout << "Milliseconds: " << duration_ms.count() << " ms\n";
   std::cout << "Seconds: " << duration_s.count() << " s\n";
-  std::cout << "Rows per second: " << (csv.rows() / (float)duration_s.count()) << "\n";
 }
