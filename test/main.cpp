@@ -117,6 +117,24 @@ TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
   REQUIRE(csv.cols() == values[0].size());
 }
 
+TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
+  Reader csv{option::Filename{"inputs/test_03.csv"}};
+
+  std::vector<ExpectedRow> values{ExpectedRow{
+    {"\"a\"", "1"}, 
+    {"\"b\\nc\"", "2"}, 
+    {"\"c\"", "3"}}};
+
+  size_t i = 0;
+  Row row;
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(row, values[i]);
+    i += 1;
+  }
+  REQUIRE(csv.rows() == values.size());
+  REQUIRE(csv.cols() == values[0].size());
+}
+
 TEST_CASE("Parse the most basic of CSV buffers - No header row" * test_suite("Reader")) {
   Reader csv{option::Filename{"inputs/test_08.csv"},
              option::ColumnNames{std::vector<std::string>{"a", "b", "c"}}};
