@@ -26,10 +26,8 @@ int main() {
   
   Row next;
   while (csv.read_row(next)) {
-    // Do something with `row`
-    // for (auto& [key, value]: row) {
-    //   std::cout << key << ": " << value << "\n";
-    // }
+    // Do something with row
+    // Here, `Row` is `std::unordered_map<std::string_view, std::string_view>`
   }
 }
 ```
