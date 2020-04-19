@@ -7,8 +7,8 @@ using ExpectedRow = std::unordered_map<std::string, std::string>;
 
 void ROWS_ARE_SAME(Row r1, ExpectedRow r2) {
   REQUIRE(r1.size() == r2.size());
-  for (auto &[k, v] : r1) {
-    REQUIRE(r2[k.data()] == v);
+  for (auto &kvpair : r1) {
+    REQUIRE(r2[kvpair.first.data()] == kvpair.second);
   }
 }
 

@@ -5,7 +5,9 @@ using namespace csv2;
 
 int main(int argc, char **argv) {
 
-  auto print_exec_time = [](auto start, auto stop) {
+  using timepoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+
+  auto print_exec_time = [](timepoint start, timepoint stop) {
     auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
     auto duration_s = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
