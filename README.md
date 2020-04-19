@@ -43,6 +43,8 @@ g++ -I../include -O3 -std=c++17 main main.cpp
 ./main <csv_file>
 ```
 
+### Measurement
+
 This program performs two key actions:
 
 1. Load file from disk and build a vector of lines
