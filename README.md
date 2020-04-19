@@ -50,9 +50,7 @@ This program performs two key actions:
 
 The execution time reported below is the average time taken to perform these two actions.
 
-Here are the results:
-
-### Hardware:
+Hardware:
 * MacBook Pro (15-inch, 2019)
 * Processor: 2.4 GHz 8-Core Intel Core i9
 * Memory: 32 GB 2400 MHz DDR4
