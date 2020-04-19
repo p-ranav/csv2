@@ -16,7 +16,8 @@ int main(int argc, char **argv) {
               << duration_s.count() << " s\n";
   };
 
-  auto start = std::chrono::high_resolution_clock::now();
+  // Measurement 1: Loading file
+  auto m1_start = std::chrono::high_resolution_clock::now();
 
   Reader csv{
       option::Filename{std::string(argv[1])}, option::Delimiter{','},
@@ -24,10 +25,23 @@ int main(int argc, char **argv) {
       // ...
   };
 
-  auto stop = std::chrono::high_resolution_clock::now();
+  auto m1_stop = std::chrono::high_resolution_clock::now();
+  auto m2_start = m1_stop;
+
+  std::vector<Row> rows;
+  Row next;
+  while(csv.read_row(next)) {
+    rows.push_back(std::move(next));
+  }
+  auto m2_stop = std::chrono::high_resolution_clock::now();
 
   std::cout << "Stats:\n";
   std::cout << "Rows: " << csv.rows() << "\n";
   std::cout << "Cols: " << csv.cols() << "\n";
-  print_exec_time(start, stop);
+  std::cout << "Measurement 1: ";
+  print_exec_time(m1_start, m1_stop);
+  std::cout << "Measurement 2: ";
+  print_exec_time(m2_start, m2_stop);
+  std::cout << "Total Execution Time: ";
+  print_exec_time(m1_start, m2_stop);
 }
