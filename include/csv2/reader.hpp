@@ -54,12 +54,10 @@ struct disjunction<Op, TailOps...>
 enum class CsvOption {
   filename = 0,
   delimiter,
-  trim_characters,
   column_names,
   ignore_columns,
   skip_empty_rows,
   quote_character,
-  trim_policy,
   skip_initial_space
 };
 
@@ -159,24 +157,15 @@ enum class Trim { none, leading, trailing, leading_and_trailing };
 namespace option {
 using Filename = details::StringSetting<details::CsvOption::filename>;
 using Delimiter = details::CharSetting<details::CsvOption::delimiter>;
-using TrimCharacters = details::Setting<std::vector<char>, details::CsvOption::trim_characters>;
 using ColumnNames = details::Setting<std::vector<std::string>, details::CsvOption::column_names>;
 using IgnoreColumns =
     details::Setting<std::vector<std::string>, details::CsvOption::ignore_columns>;
 using SkipEmptyRows = details::BooleanSetting<details::CsvOption::skip_empty_rows>;
 using QuoteCharacter = details::CharSetting<details::CsvOption::quote_character>;
-using TrimPolicy = details::Setting<Trim, details::CsvOption::trim_policy>;
 using SkipInitialSpace = details::BooleanSetting<details::CsvOption::skip_initial_space>;
 } // namespace option
 
 namespace string {
-
-// trim from start (in place)
-static inline void ltrim(std::string &s, const std::vector<char> &t) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [&t](int ch) {
-            return std::find(t.begin(), t.end(), ch) == t.end();
-          }));
-}
 
 // trim from end (in place)
 static inline void rtrim(std::string &s, const std::vector<char> &t) {
@@ -186,11 +175,6 @@ static inline void rtrim(std::string &s, const std::vector<char> &t) {
           s.end());
 }
 
-// trim from both ends (in place)
-static inline void trim(std::string &s, const std::vector<char> &t) {
-  ltrim(s, t);
-  rtrim(s, t);
-}
 } // namespace string
 
 using Row = std::unordered_map<std::string_view, std::string_view>;
@@ -206,14 +190,14 @@ class Reader {
   size_t current_row_index_{0};
   char delimiter_;
   char quote_character_;
-  std::function<void(std::string &s, const std::vector<char> &t)> trim_function_;
   bool skip_initial_space_{false};
   std::vector<std::string> ignore_columns_;
   std::atomic_bool no_more_lines_{false};
+  const std::vector<char> trim_characters_{'\n', '\r'};
 
-  using Settings = std::tuple<option::Filename, option::Delimiter, option::TrimCharacters,
+  using Settings = std::tuple<option::Filename, option::Delimiter,
                               option::ColumnNames, option::IgnoreColumns, option::SkipEmptyRows,
-                              option::QuoteCharacter, option::TrimPolicy, option::SkipInitialSpace>;
+                              option::QuoteCharacter, option::SkipInitialSpace>;
   Settings settings_;
 
   template <details::CsvOption id>
@@ -374,7 +358,6 @@ class Reader {
   }
 
   void read_file_(std::ifstream infile) {
-    const auto &trim_characters = get_value<details::CsvOption::trim_characters>();
     const auto &skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
 
     read_file_fast_(infile, [&, this](char *buffer, int length, int64_t position) -> void {
@@ -383,8 +366,7 @@ class Reader {
         return;
       }
       auto line = std::string{buffer, static_cast<size_t>(length)};
-      if (trim_function_)
-        trim_function_(line, trim_characters);
+      string::rtrim(line, trim_characters_);
       if (skip_empty_rows && line.empty())
         return;
       if (!header_tokens_.size()) {
@@ -410,8 +392,6 @@ public:
                                                        std::forward<Args>(args)...),
             details::get<details::CsvOption::delimiter>(option::Delimiter{','},
                                                         std::forward<Args>(args)...),
-            details::get<details::CsvOption::trim_characters>(
-                option::TrimCharacters{std::vector<char>{'\n', '\r'}}, std::forward<Args>(args)...),
             details::get<details::CsvOption::column_names>(option::ColumnNames{},
                                                            std::forward<Args>(args)...),
             details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{},
@@ -420,8 +400,6 @@ public:
                                                               std::forward<Args>(args)...),
             details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'},
                                                               std::forward<Args>(args)...),
-            details::get<details::CsvOption::trim_policy>(option::TrimPolicy{Trim::trailing},
-                                                          std::forward<Args>(args)...),
             details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false},
                                                                  std::forward<Args>(args)...)) {
     const auto &filename = get_value<details::CsvOption::filename>();
@@ -430,21 +408,6 @@ public:
     ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
     quote_character_ = get_value<details::CsvOption::quote_character>();
     skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
-    const auto &trim_policy = get_value<details::CsvOption::trim_policy>();
-    switch (trim_policy) {
-    case Trim::none:
-      trim_function_ = {};
-      break;
-    case Trim::leading:
-      trim_function_ = string::ltrim;
-      break;
-    case Trim::trailing:
-      trim_function_ = string::rtrim;
-      break;
-    case Trim::leading_and_trailing:
-      trim_function_ = string::trim;
-      break;
-    }
 
     // NOTE: Trimming happens at the row level and not at the field level
 
