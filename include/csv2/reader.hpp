@@ -340,7 +340,7 @@ class Reader {
             current_row_ = header_string_;
           } else { // this is not the header row, mutate line_strings_[index]
             line_strings_[current_row_index_] = line_strings_[current_row_index_].erase(field_end, 1);
-            current_row_ = header_string_;
+            current_row_ = line_strings_[current_row_index_];
           }
           j = j - 1; // update index since 1 quote character has been removed
           state = CSVState::QuotedField;
