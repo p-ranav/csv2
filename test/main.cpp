@@ -100,7 +100,7 @@ TEST_CASE("Parse row with double quotes" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_04.csv"}};
+  Reader csv{option::Filename{"inputs/test_04.csv"}, option::QuoteCharacter{'\''}};
 
   std::vector<ExpectedRow> values{ExpectedRow{
     {"a", "'Free trip to A,B'"}, 
@@ -122,7 +122,7 @@ TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
 
   std::vector<ExpectedRow> values{ExpectedRow{
     {"\"a\"", "1"}, 
-    {"\"b\\nc\"", "2"}, 
+    {"\"b\nc\"", "2"}, 
     {"\"c\"", "3"}}};
 
   size_t i = 0;
