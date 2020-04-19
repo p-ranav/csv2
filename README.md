@@ -53,7 +53,7 @@ int main() {
 
 ```bash
 mkdir build && cd build
-cmake -DCSV2_TESTS=ON ..
+cmake -DCSV2_TEST=ON ..
 make
 cd test
 ./test
