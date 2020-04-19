@@ -48,3 +48,13 @@ int main() {
 | `option::IgnoreColumns` | `std::vector<std::string>` | specifies the list of columns to ignore. Default = ```{}``` - no column ignored |
 | `option::ColumnNames` | `std::vector<std::string>` | specifies the list of column names. This is useful when the first row of the CSV isn't a header Default = ```{}``` |
 | `option::SkipEmptyRows` | `bool` | specifies how empty rows should be interpreted. If this is set to true, empty rows are skipped. Default = ```false``` |
+
+## Compiling Tests
+
+```bash
+mkdir build && cd build
+cmake -DCSV2_TESTS=ON ..
+make
+cd test
+./test
+```
