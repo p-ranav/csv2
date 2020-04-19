@@ -2,7 +2,7 @@
   <img height="75" src="img/logo.png" alt="csv2"/>
 </p>
 
-`csv2` is a fast, single-threaded CSV parser for modern C++ (`>=C++11`)
+`csv2` is a fast, single-threaded CSV parser written in `C++17`.
 
 ## Highlights
 * Single-threaded - No additional worker threads.
@@ -51,7 +51,7 @@ Compile `benchmark/main.cpp` using:
 
 ```bash
 cd benchmark
-g++ -I../include -O3 -std=c++11 -o main main.cpp
+g++ -I../include -O3 -std=c++17 -o main main.cpp
 ./main <csv_file>
 ```
 
