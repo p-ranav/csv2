@@ -277,19 +277,14 @@ class Reader {
     if (end >= current_row_.size()) return false;
     size_t last_quote_location = 0;
     bool quote_opened = false;
+
     while(end < current_row_.size() && 
           (current_row_[end] != delimiter_ || (current_row_[end] == delimiter_ && quote_opened))) {
-      // loop, all good
       if (current_row_[end] == quote_character_) {
         quote_opened = true;
 
-        // quote already opened
-        // This could either be a closing quote or an escaped quote
-        if (end + 1 < current_row_.size() && current_row_[end + 1] == quote_character_) {
-          // escaped quote
-          // keep quote opened
-        } else if (end + 1 < current_row_.size() && current_row_[end + 1] == delimiter_) {
-          quote_opened = false;
+        if (end + 1 < current_row_.size() && current_row_[end + 1] == delimiter_) {
+          // end of field, quote is closed, moving on
           end += 1;
           return true;
         }
