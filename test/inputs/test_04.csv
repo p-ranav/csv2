@@ -1,3 +1,2 @@
-           a,                   b,  c
-1      , 2, 3         
-4,      5            , 6
+a,'''b''','c'
+'Free trip to A,B','5.89','Special rate ''1.79'''

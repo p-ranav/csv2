@@ -197,6 +197,7 @@ using Row = std::unordered_map<std::string_view, std::string_view>;
 
 class Reader {
   size_t lines_{0};
+  std::string header_string_;
   std::vector<std::string> line_strings_;
   std::vector<std::string> header_tokens_;
   std::vector<std::string_view> row_tokens_;
@@ -353,7 +354,14 @@ class Reader {
           i++;
           state = CSVState::UnquotedField;
         } else if (c == quote_character_) { // "" -> "
-          field_end += 1;
+          if (!header_tokens_.size()) {
+            header_string_ = header_string_.erase(field_end, 1);
+            current_row_ = header_string_;
+          } else if (current_row_index_ < line_strings_.size()) {
+            line_strings_[current_row_index_] = line_strings_[current_row_index_].erase(field_end, 1);
+            current_row_ = header_string_;
+          }
+          j = j - 1;
           state = CSVState::QuotedField;
         } else {
           field_end += 1;
@@ -380,7 +388,8 @@ class Reader {
       if (skip_empty_rows && line.empty())
         return;
       if (!header_tokens_.size()) {
-        current_row_ = line;
+        header_string_ = std::move(line);
+        current_row_ = header_string_;
         const auto &&header_tokens = tokenize_current_row_();
         header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
         return;

@@ -1,4 +1,2 @@
-Thread_ID::Log_Level::Message
-1::DEBUG::Thread Started
-2::DEBUG::Thread Started
-3::ERROR::File not found
+a,"""b""","c"
+"Free trip to A,B","5.89","Special rate ""1.79"""
