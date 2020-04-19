@@ -72,7 +72,7 @@ Operating System: macOS Catalina version 10.15.3
 
 | Dataset | File Size | Rows | Cols | M1 | M2 | Total Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|  ---:|  ---:|
-| [Denver Crime Data](https://www.kaggle.com/paultimothymooney/denver-crime-data) | 111 MB | 479,100 | 19 | 0.170s | 1.646s | 1.817s |
+| [Denver Crime Data](https://www.kaggle.com/paultimothymooney/denver-crime-data) | 111 MB | 479,100 | 19 | 0.169s | 1.612s | 1.781s |
 | [AirBnb Paris Listings](https://www.kaggle.com/juliatb/airbnb-paris) | 196 MB | 141,730 | 96 | 0.237s | 1.797s | 2.034s |
 | [2015 Flight Delays and Cancellations](https://www.kaggle.com/usdot/flight-delays) | 574 MB | 5,819,079 | 31 | 1.088s | 27.927s | 29.016s |
 | [StackLite: Stack Overflow questions](https://www.kaggle.com/stackoverflow/stacklite) | 870 MB | 17,203,824 | 7 | 2.441s | 27.007s | 29.449s |
