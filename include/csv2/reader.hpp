@@ -273,86 +273,63 @@ class Reader {
     line_handler(0, 0); // eof
   }
 
-  enum class CSVState { UnquotedField, QuotedField, QuotedQuote };
+  bool next_column_end_(size_t& end) {
+    if (end >= current_row_.size()) return false;
+    size_t last_quote_location = 0;
+    bool quote_opened = false;
+    while(end < current_row_.size() && 
+          (current_row_[end] != delimiter_ || (current_row_[end] == delimiter_ && quote_opened))) {
+      // loop, all good
+      if (current_row_[end] == quote_character_) {
+        if (!quote_opened) quote_opened = true;
 
-  std::vector<std::string_view> tokenize_current_row_() {
-    CSVState state = CSVState::UnquotedField;
-    std::vector<std::string_view> fields;
-    size_t i = 0; // index of the current field
-
-    int field_start = 0;
-    int field_end = 0;
-
-    for (size_t j = 0; j < current_row_.size(); ++j) {
-      char c = current_row_[j];
-      switch (state) {
-      case CSVState::UnquotedField:
-        if (c == delimiter_) {
-          // Check for initial space right after delimiter
-          size_t initial_space_offset{0};
-          if (skip_initial_space_ && j + 1 < current_row_.size() && current_row_[j + 1] == ' ') {
-            initial_space_offset = 1;
-            j++;
-          }
-
-          fields.push_back(current_row_.substr(field_start, field_end - field_start));
-          field_start = field_end + 1 + initial_space_offset; // start after delimiter
-          field_end = field_start;                            // reset interval
-          i++;
-        } else if (c == quote_character_) {
-          field_end += 1;
-          state = CSVState::QuotedField;
-        } else {
-          field_end += 1;
-          if (j + 1 == current_row_.size()) { // last entry
-            fields.push_back(current_row_.substr(field_start, field_end - field_start));
+        // Quote opened either for the first time or previously
+        if (quote_opened) {
+          // quote already opened
+          // This could either be a closing quote or an escaped quote
+          if (end + 1 < current_row_.size() && current_row_[end + 1] == quote_character_) {
+            // escaped quote
+            // keep quote opened
+          } else if (end + 1 < current_row_.size() && current_row_[end + 1] == delimiter_) {
+            quote_opened = false;
+            end += 1;
+            return true;
           }
         }
-        break;
-      case CSVState::QuotedField:
-        if (c == quote_character_) {
-          field_end += 1;
-          state = CSVState::QuotedQuote;
-          if (j + 1 == current_row_.size()) { // last entry
-            fields.push_back(current_row_.substr(field_start, field_end - field_start));
-          }
-        } else {
-          field_end += 1;
-        }
-        break;
-      case CSVState::QuotedQuote:
-        if (c == delimiter_) { // , after closing quote
-          // Check for initial space right after delimiter
-          size_t initial_space_offset{0};
-          if (skip_initial_space_ && j + 1 < current_row_.size() && current_row_[j + 1] == ' ') {
-            initial_space_offset = 1;
-            j++;
-          }
 
-          fields.push_back(current_row_.substr(field_start, field_end - field_start));
-          field_start = field_end + 1 + initial_space_offset; // start after delimiter
-          field_end = field_start;                            // reset interval
-          i++;
-          state = CSVState::UnquotedField;
-        } else if (c == quote_character_) { // "" -> "
+        // Check if previous character was also a quote
+        if (last_quote_location == end - 1) {
           if (header_tokens_.empty()) { // this is the header row, mutate header_string_
-            header_string_ = header_string_.erase(field_end, 1);
+            header_string_.erase(end, 1);
             current_row_ = header_string_;
           } else { // this is not the header row, mutate line_strings_[index]
-            line_strings_[current_row_index_] = line_strings_[current_row_index_].erase(field_end, 1);
+            line_strings_[current_row_index_].erase(end, 1);
             current_row_ = line_strings_[current_row_index_];
           }
-          j = j - 1; // update index since 1 quote character has been removed
-          state = CSVState::QuotedField;
-        } else {
-          field_end += 1;
-          state = CSVState::UnquotedField;
-        }
-        break;
+          last_quote_location = end;
+          end -= 1;
+        } else 
+          last_quote_location = end;
       }
+      end += 1;
     }
-    return fields;
+    return true;
   }
+
+  std::vector<std::string_view> tokenize_current_row_() {
+    size_t start = 0, end = start;
+    std::vector<std::string_view> result;
+    while(next_column_end_(end)) {
+      result.push_back(current_row_.substr(start, end - start));
+      // end is at the delimiter
+      if (skip_initial_space_ && (end + 1 < current_row_.size()) && current_row_[end + 1] == ' ')
+        end += 1;
+      start = end + 1;
+      end = start;
+    }
+    return result;
+  }
+
 
   void read_file_(std::ifstream infile) {
     const auto &skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
