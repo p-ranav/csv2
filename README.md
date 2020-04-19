@@ -19,7 +19,7 @@ int main() {
   Reader csv{
     option::Filename{std::string("foo.csv")},
     option::Delimiter{','},
-    option::SkipInitialSpace{true},
+    option::SkipInitialSpace{true}
     // ...
   };
   
