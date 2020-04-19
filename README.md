@@ -26,12 +26,30 @@ int main() {
   Row next;
   while (csv.read_row(next)) {
     // Do something with `row`
-    for (auto& [key, value]: row) {
-      std::cout << key << ": " << value << "\n";
-    }
+    // for (auto& [key, value]: row) {
+    //   std::cout << key << ": " << value << "\n";
+    // }
   }
 }
 ```
+
+## Performance Benchmark
+
+Compile `benchmark/main.cpp` using:
+
+```bash
+cd benchmark
+g++ -I../include -O3 -std=c++17 main main.cpp 
+```
+
+The goal is to access execution time of this program against a number of CSV datasets, performing two key actions:
+
+1. Load file from disk
+2. Iterate over all rows in CSV
+
+Here are the results:
+
+
 
 ## Options
 
@@ -46,8 +64,6 @@ int main() {
 | `option::IgnoreColumns` | `std::vector<std::string>` | specifies the list of columns to ignore. Default = ```{}``` - no column ignored |
 | `option::ColumnNames` | `std::vector<std::string>` | specifies the list of column names. This is useful when the first row of the CSV isn't a header Default = ```{}``` |
 | `option::SkipEmptyRows` | `bool` | specifies how empty rows should be interpreted. If this is set to true, empty rows are skipped. Default = ```false``` |
-
-## Performance Benchmark
 
 ## Compiling Tests
 
