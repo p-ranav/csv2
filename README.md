@@ -45,8 +45,7 @@ g++ -I../include -O3 -std=c++17 main main.cpp
 
 The goal is to access execution time of this program performing two key actions:
 
-1. Load file from disk
-2. Iterate over all rows in CSV
+`Execution Time = Time taken to (Load file from disk + iterate over all rows)`
 
 Here are the results:
 
