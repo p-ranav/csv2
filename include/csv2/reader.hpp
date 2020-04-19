@@ -342,8 +342,6 @@ class Reader {
             line_strings_[current_row_index_] = line_strings_[current_row_index_].erase(field_end, 1);
             current_row_ = header_string_;
           }
-          std::cout << "Updated current row: " << current_row_ << std::endl;
-          std::cout << "  current substr: " << current_row_.substr(field_start, field_end - field_start) << std::endl;
           j = j - 1; // update index since 1 quote character has been removed
           state = CSVState::QuotedField;
         } else {
