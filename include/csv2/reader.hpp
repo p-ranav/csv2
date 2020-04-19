@@ -366,8 +366,8 @@ class Reader {
   }
 
   void read_file_(std::ifstream infile) {
-    auto &trim_characters = get_value<details::CsvOption::trim_characters>();
-    auto &skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
+    const auto &trim_characters = get_value<details::CsvOption::trim_characters>();
+    const auto &skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
 
     read_file_fast_(infile, [&, this](char *buffer, int length, int64_t position) -> void {
       if (!buffer) {
@@ -415,14 +415,13 @@ public:
                                                           std::forward<Args>(args)...),
             details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false},
                                                                  std::forward<Args>(args)...)) {
-
-    auto &filename = get_value<details::CsvOption::filename>();
-    auto &column_names = get_value<details::CsvOption::column_names>();
+    const auto &filename = get_value<details::CsvOption::filename>();
+    const auto &column_names = get_value<details::CsvOption::column_names>();
     delimiter_ = get_value<details::CsvOption::delimiter>();
     ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
     quote_character_ = get_value<details::CsvOption::quote_character>();
     skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
-    auto &trim_policy = get_value<details::CsvOption::trim_policy>();
+    const auto &trim_policy = get_value<details::CsvOption::trim_policy>();
     switch (trim_policy) {
     case Trim::none:
       trim_function_ = {};
@@ -446,7 +445,7 @@ public:
     std::ios_base::sync_with_stdio(false);
     std::ifstream infile(filename);
     if (!infile.is_open())
-      throw std::runtime_error("error: Failed to open " + filename);
+      throw std::runtime_error("error: Failed to open file " + filename);
 
     read_file_(std::move(infile));
   }
