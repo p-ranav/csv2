@@ -43,11 +43,20 @@ g++ -I../include -O3 -std=c++17 main main.cpp
 ./main <csv_file>
 ```
 
-The goal is to access execution time of this program performing two key actions:
+This program performs two key actions:
 
-`Execution Time = Time taken to (Load file from disk + iterate over all rows)`
+1. Load file from disk and build a vector of lines
+2. Iterate over all rows in the CSV, tokenizing each row into a vector of fields
+
+The execution time reported below is the average time taken to perform these two actions.
 
 Here are the results:
+
+### Hardware:
+* MacBook Pro (15-inch, 2019)
+* Processor: 2.4 GHz 8-Core Intel Core i9
+* Memory: 32 GB 2400 MHz DDR4
+* Operating System: macOS Catalina version 10.15.3
 
 | Dataset | File Size | Rows | Cols | Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|
