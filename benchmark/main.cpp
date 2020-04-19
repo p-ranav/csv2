@@ -20,8 +20,7 @@ int main(int argc, char **argv) {
   auto m1_start = std::chrono::high_resolution_clock::now();
 
   Reader csv{
-      option::Filename{std::string(argv[1])}, option::Delimiter{','},
-      option::SkipInitialSpace{true}
+      option::Filename{std::string(argv[1])}, option::Delimiter{','}, option::SkipInitialSpace{true}
       // ...
   };
 
@@ -30,7 +29,7 @@ int main(int argc, char **argv) {
 
   std::vector<Row> rows;
   Row next;
-  while(csv.read_row(next)) {
+  while (csv.read_row(next)) {
     rows.push_back(std::move(next));
   }
   auto m2_stop = std::chrono::high_resolution_clock::now();

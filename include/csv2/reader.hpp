@@ -165,18 +165,6 @@ using QuoteCharacter = details::CharSetting<details::CsvOption::quote_character>
 using SkipInitialSpace = details::BooleanSetting<details::CsvOption::skip_initial_space>;
 } // namespace option
 
-namespace string {
-
-// trim from end (in place)
-static inline void rtrim(std::string &s, const std::vector<char> &t) {
-  s.erase(std::find_if(s.rbegin(), s.rend(),
-                       [&t](int ch) { return std::find(t.begin(), t.end(), ch) == t.end(); })
-              .base(),
-          s.end());
-}
-
-} // namespace string
-
 using Row = std::unordered_map<std::string_view, std::string_view>;
 
 class Reader {
@@ -192,11 +180,10 @@ class Reader {
   char quote_character_;
   bool skip_initial_space_{false};
   std::vector<std::string> ignore_columns_;
-  const std::vector<char> trim_characters_{'\n', '\r'};
 
-  using Settings = std::tuple<option::Filename, option::Delimiter,
-                              option::ColumnNames, option::IgnoreColumns, option::SkipEmptyRows,
-                              option::QuoteCharacter, option::SkipInitialSpace>;
+  using Settings =
+      std::tuple<option::Filename, option::Delimiter, option::ColumnNames, option::IgnoreColumns,
+                 option::SkipEmptyRows, option::QuoteCharacter, option::SkipInitialSpace>;
   Settings settings_;
 
   template <details::CsvOption id>
@@ -273,13 +260,14 @@ class Reader {
     line_handler(0, 0); // eof
   }
 
-  bool next_column_end_(size_t& end) {
-    if (end >= current_row_.size()) return false;
+  bool next_column_end_(size_t &end) {
+    if (end >= current_row_.size())
+      return false;
     size_t last_quote_location = 0;
     bool quote_opened = false;
 
-    while(end < current_row_.size() && 
-          (current_row_[end] != delimiter_ || (current_row_[end] == delimiter_ && quote_opened))) {
+    while (end < current_row_.size() &&
+           (current_row_[end] != delimiter_ || (current_row_[end] == delimiter_ && quote_opened))) {
       if (current_row_[end] == quote_character_) {
         quote_opened = true;
 
@@ -300,7 +288,7 @@ class Reader {
           }
           last_quote_location = end;
           end -= 1;
-        } else 
+        } else
           last_quote_location = end;
       }
       end += 1;
@@ -311,7 +299,7 @@ class Reader {
   std::vector<std::string_view> tokenize_current_row_() {
     size_t start = 0, end = start;
     std::vector<std::string_view> result;
-    while(next_column_end_(end)) {
+    while (next_column_end_(end)) {
       result.push_back(current_row_.substr(start, end - start));
       // end is at the delimiter
       if (skip_initial_space_ && (end + 1 < current_row_.size()) && current_row_[end + 1] == ' ')
@@ -322,14 +310,23 @@ class Reader {
     return result;
   }
 
-
   void read_file_(std::ifstream infile) {
     const auto &skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
 
     read_file_fast_(infile, [&, this](char *buffer, int length) -> void {
-      if (!buffer) return;
-      auto line = std::string{buffer, static_cast<size_t>(length)};
-      string::rtrim(line, trim_characters_);
+      if (!buffer)
+        return;
+      std::string line;
+      if (length > 0 && buffer[length - 1] == '\n') {
+        if (length > 1 && buffer[length - 2] == '\r') {
+          line = std::string{buffer, static_cast<size_t>(length - 2)};
+        } else {
+          line = std::string{buffer, static_cast<size_t>(length - 1)};
+        }
+      } else {
+        line = std::string{buffer, static_cast<size_t>(length)};
+      }
+
       if (skip_empty_rows && line.empty())
         return;
       if (header_tokens_.empty()) {
@@ -350,21 +347,20 @@ public:
                                         Settings, typename std::decay<Args>::type...>::value,
                                     void *>::type = nullptr>
   Reader(Args &&... args)
-      : settings_(
-            details::get<details::CsvOption::filename>(option::Filename{""},
-                                                       std::forward<Args>(args)...),
-            details::get<details::CsvOption::delimiter>(option::Delimiter{','},
-                                                        std::forward<Args>(args)...),
-            details::get<details::CsvOption::column_names>(option::ColumnNames{},
-                                                           std::forward<Args>(args)...),
-            details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{},
+      : settings_(details::get<details::CsvOption::filename>(option::Filename{""},
                                                              std::forward<Args>(args)...),
-            details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false},
+                  details::get<details::CsvOption::delimiter>(option::Delimiter{','},
                                                               std::forward<Args>(args)...),
-            details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'},
-                                                              std::forward<Args>(args)...),
-            details::get<details::CsvOption::skip_initial_space>(option::SkipInitialSpace{false},
-                                                                 std::forward<Args>(args)...)) {
+                  details::get<details::CsvOption::column_names>(option::ColumnNames{},
+                                                                 std::forward<Args>(args)...),
+                  details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{},
+                                                                   std::forward<Args>(args)...),
+                  details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false},
+                                                                    std::forward<Args>(args)...),
+                  details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'},
+                                                                    std::forward<Args>(args)...),
+                  details::get<details::CsvOption::skip_initial_space>(
+                      option::SkipInitialSpace{false}, std::forward<Args>(args)...)) {
     const auto &filename = get_value<details::CsvOption::filename>();
     header_tokens_ = get_value<details::CsvOption::column_names>();
     delimiter_ = get_value<details::CsvOption::delimiter>();
@@ -419,7 +415,6 @@ public:
       result.push_back(h);
     return result;
   }
-
 };
 
 } // namespace csv2
