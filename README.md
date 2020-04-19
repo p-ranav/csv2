@@ -50,12 +50,13 @@ This program performs two key actions:
 
 The execution time reported below is the average time taken to perform these two actions.
 
-Hardware:
+### Hardware:
 * MacBook Pro (15-inch, 2019)
 * Processor: 2.4 GHz 8-Core Intel Core i9
 * Memory: 32 GB 2400 MHz DDR4
 * Operating System: macOS Catalina version 10.15.3
 
+### Execution Times
 | Dataset | File Size | Rows | Cols | Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|
 | [Bitcoin tweets - 16M tweets](https://www.kaggle.com/alaix14/bitcoin-tweets-20160101-to-20190329) | 4 GB | 47,478,748 | 9 | 8.889s |
