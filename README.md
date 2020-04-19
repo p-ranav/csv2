@@ -47,6 +47,8 @@ int main() {
 | `option::ColumnNames` | `std::vector<std::string>` | specifies the list of column names. This is useful when the first row of the CSV isn't a header Default = ```{}``` |
 | `option::SkipEmptyRows` | `bool` | specifies how empty rows should be interpreted. If this is set to true, empty rows are skipped. Default = ```false``` |
 
+## Performance Benchmark
+
 ## Compiling Tests
 
 ```bash
