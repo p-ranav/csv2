@@ -336,14 +336,14 @@ class Reader {
           i++;
           state = CSVState::UnquotedField;
         } else if (c == quote_character_) { // "" -> "
-          if (!header_tokens_.size()) {
+          if (header_tokens_.empty()) { // this is the header row, mutate header_string_
             header_string_ = header_string_.erase(field_end, 1);
             current_row_ = header_string_;
-          } else if (current_row_index_ < line_strings_.size()) {
+          } else { // this is not the header row, mutate line_strings_[index]
             line_strings_[current_row_index_] = line_strings_[current_row_index_].erase(field_end, 1);
             current_row_ = header_string_;
           }
-          j = j - 1;
+          j = j - 1; // update index since 1 quote character has been removed
           state = CSVState::QuotedField;
         } else {
           field_end += 1;
@@ -367,7 +367,7 @@ class Reader {
       string::rtrim(line, trim_characters_);
       if (skip_empty_rows && line.empty())
         return;
-      if (!header_tokens_.size()) {
+      if (header_tokens_.empty()) {
         header_string_ = std::move(line);
         current_row_ = header_string_;
         const auto &&header_tokens = tokenize_current_row_();
