@@ -59,14 +59,8 @@ g++ -I../include -O3 -std=c++17 main main.cpp
 
 ### Measurement
 
-This program performs two key actions:
+The execution time reported below is the average time taken to parse the input CSV file, running on the following hardware:
 
-1. Load file from disk and build a vector of lines
-2. Iterate over all rows in the CSV, tokenizing each row into a vector of fields
-
-The execution time reported below is the average time taken to perform these two actions.
-
-### Hardware:
 * MacBook Pro (15-inch, 2019)
 * Processor: 2.4 GHz 8-Core Intel Core i9
 * Memory: 32 GB 2400 MHz DDR4
