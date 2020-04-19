@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
   
   Reader csv{
     option::Filename{std::string(argv[1])},
-    option::Delimiter{','},
+    option::Delimiter{';'},
     option::SkipInitialSpace{true},
     option::TrimCharacters{std::vector<char>{'\n', '\r'}},
     option::TrimPolicy{Trim::trailing}
@@ -22,14 +22,22 @@ int main(int argc, char **argv) {
   }
 
   // Get ending timepoint 
-  auto stop = std::chrono::high_resolution_clock::now(); 
+  auto stop = std::chrono::high_resolution_clock::now();
+
+  std::cout << "Stats:\n";
+  std::cout << "Rows: " << csv.rows() << "\n";
+  std::cout << "Cols: " << csv.cols() << "\n";
   
-  // Get duration. Substart timepoints to  
-  // get durarion. To cast it to proper unit 
-  // use duration cast method 
-  auto duration =
-    std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
+  // Get execution time
+  auto duration_us =
+    std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  auto duration_ms =
+    std::chrono::duration_cast<std::chrono::milliseconds>(stop - start); 
+  auto duration_s =
+    std::chrono::duration_cast<std::chrono::seconds>(stop - start);   
   
-  std::cout << "Execution Time: " << duration.count() << " us\n"; 
-  
+  std::cout << "Microseconds: " << duration_us.count() << " us\n";
+  std::cout << "Milliseconds: " << duration_ms.count() << " ms\n";
+  std::cout << "Seconds: " << duration_s.count() << " s\n";
+  std::cout << "Rows per second: " << (csv.rows() / (float)duration_s.count()) << "\n";
 }
