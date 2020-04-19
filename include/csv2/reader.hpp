@@ -15,11 +15,6 @@
 #include <utility>
 #include <vector>
 
-#include <chrono> 
-#include <iostream> 
-using namespace std; 
-using namespace std::chrono; 
-
 namespace csv2 {
 
 namespace details {
@@ -322,7 +317,6 @@ class Reader {
   }
 
   std::vector<std::string_view> tokenize_current_row_() {
-    auto start_time = high_resolution_clock::now(); 
     size_t start = 0, end = start;
     std::vector<std::string_view> result;
     while(next_column_end_(end)) {
@@ -333,18 +327,6 @@ class Reader {
       start = end + 1;
       end = start;
     }
-    // Get ending timepoint 
-    auto stop = high_resolution_clock::now(); 
-  
-    // Get duration. Substart timepoints to  
-    // get durarion. To cast it to proper unit 
-    // use duration cast method 
-    auto duration = duration_cast<nanoseconds>(stop - start_time); 
-
-    if (duration.count() > 10000) {
-      std::cout << "This line took time: " << current_row_ << std::endl;
-    }
-    
     return result;
   }
 
