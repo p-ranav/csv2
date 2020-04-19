@@ -51,7 +51,7 @@ Here are the results:
 
 | Dataset | File Size | Rows | Cols | Time | Rows per second |
 |:---     |       ---:|  ---:|  ---:|  ---:|  ---:|
-| [Bitcoin tweets - 16M tweets](https://www.kaggle.com/alaix14/bitcoin-tweets-20160101-to-20190329) | 4 GB | 47478748 | 9 | 8.889s | 5.93 million |
+| [Bitcoin tweets - 16M tweets](https://www.kaggle.com/alaix14/bitcoin-tweets-20160101-to-20190329) | 4 GB | 47,478,748 | 9 | 8.889s | 5.93 million |
 
 ## Options
 
