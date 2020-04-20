@@ -255,6 +255,7 @@ class Reader {
         line_handler(buffer + string_start + 1, string_end - string_start);
       }
     }
+    delete[] buffer;
     line_handler(0, 0); // eof
   }
 
