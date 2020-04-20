@@ -6,6 +6,7 @@
 
 ## Highlights
 * Single-threaded - No additional worker threads.
+* Fast - Generous use of `std::string_view` to reduce allocations/copies.
 * Lazy evaluated - Tokenization is not performed until `read_row()` is called.
 * Single header file - Just include `<csv2/reader.hpp>`
 * MIT License.
