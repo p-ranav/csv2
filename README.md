@@ -16,7 +16,6 @@
 using namespace csv2;
 
 int main() {
-
   Reader csv {
     option::Delimiter{','},
     option::SkipInitialSpace{true}
