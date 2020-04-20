@@ -44,6 +44,27 @@ int main() {
 | `option::ColumnNames` | `std::vector<std::string>` | specifies the list of column names. This is useful when the first row of the CSV isn't a header Default = ```{}``` |
 | `option::SkipEmptyRows` | `bool` | specifies how empty rows should be interpreted. If this is set to true, empty rows are skipped. Default = ```false``` |
 
+## Row Data Structure
+
+The `Row` data structure is a simple interface to access the fields in each row of the CSV. 
+
+```cpp
+class Row {
+  std::vector<std::string_view> header_;
+  std::vector<std::strinv_view> fields_;
+public:
+  // Looks up the `index` of `key` in `header_`
+  // Then returns `fields_[index]`
+  std::string_view operator[](string_type key) const;
+
+  // Get direct access to the vector of fields
+  std::vector<std::strinv_view> fields() const;
+
+  // fields_.size()
+  size_t size() const;
+};
+```
+
 ## Performance Benchmark
 
 Compile `benchmark/main.cpp` using:
