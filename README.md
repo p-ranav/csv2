@@ -43,7 +43,29 @@ int main() {
 | `option::ColumnNames` | `std::vector<std::string>` | specifies the list of column names. This is useful when the first row of the CSV isn't a header Default = ```{}``` |
 | `option::SkipEmptyRows` | `bool` | specifies how empty rows should be interpreted. If this is set to true, empty rows are skipped. Default = ```false``` |
 
-## Row Data Structure
+## Data Structures
+
+Construct a `csv2::Reader` to start parsing CSV files
+
+```cpp
+class Reader {
+public:
+  // Constructor
+  Reader(Args&&... options);
+
+  // Access rows
+  // Returns true if read was successful
+  // Returns false if no more rows
+  bool read_row(Row& result);
+
+  // Shape
+  size_t rows() const;
+  size_t cols() const;
+
+  // Header
+  std::vector<std::string_view> header() const;
+};
+```
 
 The `Row` data structure is a simple interface to access the fields in each row of the CSV. 
 
