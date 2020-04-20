@@ -60,7 +60,6 @@ public:
   // Read CSV file
   // Builds a vector of strings (lines)
   // Returns true if file read was successful
-  template <typename StringType>
   bool open(StringType&& filename);
 
   // Access rows
@@ -89,7 +88,6 @@ class Row {
   std::vector<std::string_view> fields_;
 public:
   // Look up field by header `key`
-  template <typename StringType>
   std::string_view operator[](StringType&& key) const;
 
   // Get direct access to the vector of fields
