@@ -22,14 +22,8 @@ TEST_CASE("Parse an empty CSV" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse file that doesn't exist" * test_suite("Reader")) {
-  bool exception_thrown = false;
   Reader csv;
-  try {
-    csv.open("inputs/missing.csv");
-  } catch (std::exception &) {
-    exception_thrown = true;
-  }
-  REQUIRE(exception_thrown);
+  REQUIRE(!csv.open("inputs/missing.csv"));
 }
 
 TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {

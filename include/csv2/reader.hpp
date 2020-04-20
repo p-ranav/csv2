@@ -168,9 +168,9 @@ class Row {
   std::vector<std::string_view> fields_;
   friend class Reader;
 public:
-  template <typename H>
-  std::string_view operator[](H&& h) const {
-    auto it = std::find(header_.begin(), header_.end(), std::forward<H>(h));
+  template <typename StringType>
+  std::string_view operator[](StringType&& h) const {
+    auto it = std::find(header_.begin(), header_.end(), std::forward<StringType>(h));
     if (it != header_.end()) {
       // header found
       const size_t index = std::distance(header_.begin(), it);
@@ -388,7 +388,8 @@ public:
     skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
   }
 
-  void open(const std::string& filename) {
+  template <typename StringType>
+  bool open(StringType&& filename) {
     // Prepare to parse new file
     lines_ = 0;
     header_string_.clear();
@@ -403,12 +404,11 @@ public:
     std::ios_base::sync_with_stdio(false);
     std::ifstream infile;
     infile.rdbuf()->pubsetbuf(stream_buffer, stream_buffer_size);
-    infile.open(filename);
-
+    infile.open(std::forward<StringType>(filename));
     if (!infile.is_open())
-      throw std::runtime_error("error: Failed to open file " + filename);
-
+      return false;
     read_file_(std::move(infile)); 
+    return true;
   }
 
   bool read_row(Row& result) {

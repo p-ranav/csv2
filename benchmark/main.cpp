@@ -23,25 +23,28 @@ int main(int argc, char **argv) {
       option::Delimiter{','}, option::SkipInitialSpace{true}
       // ...
   };
-  csv.open(argv[1]);
-
-  auto m1_stop = std::chrono::high_resolution_clock::now();
-  auto m2_start = m1_stop;
-
-  std::vector<Row> rows;
-  Row next;
-  while (csv.read_row(next)) {
-    rows.push_back(std::move(next));
+  if (csv.open(argv[1])) {
+    auto m1_stop = std::chrono::high_resolution_clock::now();
+    auto m2_start = m1_stop;
+    
+    std::vector<Row> rows;
+    Row next;
+    while (csv.read_row(next)) {
+      rows.push_back(std::move(next));
+    }
+    auto m2_stop = std::chrono::high_resolution_clock::now();
+    
+    std::cout << "Stats:\n";
+    std::cout << "Rows: " << csv.rows() << "\n";
+    std::cout << "Cols: " << csv.cols() << "\n";
+    std::cout << "Measurement 1: ";
+    print_exec_time(m1_start, m1_stop);
+    std::cout << "Measurement 2: ";
+    print_exec_time(m2_start, m2_stop);
+    std::cout << "Total Execution Time: ";
+    print_exec_time(m1_start, m2_stop);
   }
-  auto m2_stop = std::chrono::high_resolution_clock::now();
-
-  std::cout << "Stats:\n";
-  std::cout << "Rows: " << csv.rows() << "\n";
-  std::cout << "Cols: " << csv.cols() << "\n";
-  std::cout << "Measurement 1: ";
-  print_exec_time(m1_start, m1_stop);
-  std::cout << "Measurement 2: ";
-  print_exec_time(m2_start, m2_stop);
-  std::cout << "Total Execution Time: ";
-  print_exec_time(m1_start, m2_stop);
+  else {
+    std::cout << "error: Failed to open " << argv[1] << std::endl;
+  }
 }

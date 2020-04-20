@@ -25,13 +25,13 @@ int main() {
   };
 
   // Load the CSV file
-  csv.open("foo.csv");
-  
-  // Iterate over rows
-  Row next;
-  while (csv.read_row(next)) {
-    // Do something with row
-    // auto field = next["column"]
+  if (csv.open("foo.csv")) {
+    // Iterate over rows
+    Row next;
+    while (csv.read_row(next)) {
+      // Do something with row
+      // auto field = next["column"]
+    }
   }
 }
 ```
@@ -59,7 +59,9 @@ public:
 
   // Read CSV file
   // Builds a vector of strings (lines)
-  void open(const std::string& filename);
+  // Returns true if file read was successful
+  template <typename StringType>
+  bool open(StringType&& filename);
 
   // Access rows
   // Returns false if no more rows
@@ -87,7 +89,8 @@ class Row {
   std::vector<std::string_view> fields_;
 public:
   // Look up field by header `key`
-  std::string_view operator[](string_type key) const;
+  template <typename StringType>
+  std::string_view operator[](StringType&& key) const;
 
   // Get direct access to the vector of fields
   std::vector<std::string_view> fields() const;
