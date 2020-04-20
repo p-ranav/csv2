@@ -67,15 +67,12 @@ public:
 };
 ```
 
-The `Row` data structure is a simple interface to access the fields in each row of the CSV. 
+The `csv2::Row` data structure is used to access the fields in each row of the CSV. 
 
 ```cpp
 class Row {
-  std::vector<std::string_view> header_;
-  std::vector<std::strinv_view> fields_;
 public:
-  // Looks up the `index` of `key` in `header_`
-  // Then returns `fields_[index]`
+  // Look up field by header `key`
   std::string_view operator[](string_type key) const;
 
   // Get direct access to the vector of fields
