@@ -58,7 +58,7 @@ public:
   std::string_view operator[](string_type key) const;
 
   // Get direct access to the vector of fields
-  std::vector<std::strinv_view> fields() const;
+  std::vector<std::string_view> fields() const;
 
   // fields_.size()
   size_t size() const;
