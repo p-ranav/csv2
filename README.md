@@ -17,14 +17,17 @@ using namespace csv2;
 
 int main() {
 
+  // Construct a csv2::Reader with options
   Reader csv {
     option::Delimiter{','},
     option::SkipInitialSpace{true}
     // ...
   };
 
+  // Load the CSV file
   csv.open("foo.csv");
   
+  // Iterate over rows
   Row next;
   while (csv.read_row(next)) {
     // Do something with row
