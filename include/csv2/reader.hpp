@@ -182,7 +182,7 @@ public:
     }
   }
 
-  std::string_view operator[](size_t index) {
+  std::string_view operator[](size_t index) const {
     return fields_[index];
   }
 
