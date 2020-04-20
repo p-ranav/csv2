@@ -28,8 +28,9 @@ int main(int argc, char **argv) {
     auto m2_start = m1_stop;
     
     std::vector<Row> rows;
-    while (auto row = csv.read_row()) {
-      rows.push_back(std::move(row));
+    Row next;
+    while (csv.read_row(next)) {
+      rows.push_back(std::move(next));
     }
     auto m2_stop = std::chrono::high_resolution_clock::now();
     

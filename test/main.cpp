@@ -3,12 +3,13 @@
 using namespace csv2;
 using doctest::test_suite;
 
-using ExpectedRow = std::unordered_map<std::string, std::string>;
+using Header = std::vector<std::string_view>;
+using ExpectedRow = std::unordered_map<std::string_view, std::string_view>;
 
-void ROWS_ARE_SAME(Row r1, ExpectedRow r2) {
+void ROWS_ARE_SAME(Header h, Row r1, ExpectedRow r2) {
   REQUIRE(r1.size() == r2.size());
-  for (auto &kvpair : r2) {
-    REQUIRE(r1[kvpair.first] == kvpair.second);
+  for (size_t i = 0; i < h.size(); i++) {
+    REQUIRE(r1[i] == r2[h[i]]);
   }
 }
 
@@ -34,8 +35,9 @@ TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {
                                   ExpectedRow{{"a", "4"}, {"b", "5"}, {"c", "6"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -52,8 +54,9 @@ TEST_CASE("Parse the most basic of CSV buffers with ', ' delimiter using skip_in
                                   ExpectedRow{{"a", "4"}, {"b", "5"}, {"c", "6"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -90,8 +93,9 @@ TEST_CASE("Parse row with double quotes" * test_suite("Reader")) {
                                               {"\"c\"", "\"Special rate \"1.79\"\""}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -107,8 +111,9 @@ TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
       {"a", "'Free trip to A,B'"}, {"''b''", "'5.89'"}, {"'c'", "'Special rate '1.79''"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -123,8 +128,9 @@ TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
   std::vector<ExpectedRow> values{ExpectedRow{{"\"a\"", "1"}, {"\"b\\nc\"", "2"}, {"\"d\"", "3"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -141,8 +147,9 @@ TEST_CASE("Parse the most basic of CSV buffers - No header row" * test_suite("Re
                                   ExpectedRow{{"a", "7"}, {"b", "8"}, {"c", "9"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -158,8 +165,9 @@ TEST_CASE("Parse the most basic of CSV buffers - Space delimiter" * test_suite("
                                   ExpectedRow{{"first_name", "John"}, {"last_name", "Cleese"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -175,8 +183,9 @@ TEST_CASE("Parse the most basic of CSV buffers and ignore 1 column" * test_suite
                                   ExpectedRow{{"b", "5"}, {"c", "6"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -191,8 +200,9 @@ TEST_CASE("Parse the most basic of CSV buffers and ignore 2 columns" * test_suit
   std::vector<ExpectedRow> values{ExpectedRow{{"c", "3"}}, ExpectedRow{{"c", "6"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -207,14 +217,15 @@ TEST_CASE("Parse the most basic of CSV buffers and ignore all columns" * test_su
   std::vector<ExpectedRow> values{ExpectedRow{}, ExpectedRow{}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
     // Never enters while loop
     // `row` evaluates to false in the explicit operator bool()
     // because `row.fields.size()` == 0
-    ROWS_ARE_SAME(row, values[i]);
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
-  REQUIRE(i == 0);
+  REQUIRE(i == values.size());
   REQUIRE(csv.rows() == values.size());
   REQUIRE(csv.cols() == values[0].size());
 }
@@ -234,8 +245,9 @@ TEST_CASE("Parse the most basic of CSV buffers and ignore age/gender columns" *
           {"name", "Jane Barkley"}, {"email", "jane.barkley@gmail.com"}, {"department", "MGT"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -258,8 +270,9 @@ TEST_CASE("Parse CSV with empty lines" * test_suite("Reader")) {
   };
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -277,8 +290,9 @@ TEST_CASE("Parse CSV with empty lines - skip empty rows" * test_suite("Reader"))
                                   ExpectedRow{{"a", "10"}, {"b", "11"}, {"c", "12"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -294,8 +308,9 @@ TEST_CASE("Parse CSV with missing columns" * test_suite("Reader")) {
                                   ExpectedRow{{"a", "5"}, {"b", "6"}, {"c", ""}, {"d", "8"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -315,8 +330,9 @@ TEST_CASE("Parse CSV with missing columns II" * test_suite("Reader")) {
                                   ExpectedRow{{"a", "1"}, {"b", ""}, {"c", ""}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -332,8 +348,9 @@ TEST_CASE("Parse CSV with too many columns" * test_suite("Reader")) {
                                   ExpectedRow{{"a", "6"}, {"b", "7"}, {"c", ""}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -348,8 +365,9 @@ TEST_CASE("Parse single row" * test_suite("Reader")) {
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}}};
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());
@@ -423,8 +441,9 @@ TEST_CASE("Parse exceptions" * test_suite("Reader")) {
   values[5]["Function"] = "virtual void ExceptionsTest::run()";
 
   size_t i = 0;
-  while (auto row = csv.read_row()) {
-    ROWS_ARE_SAME(row, values[i]);
+  Row row; auto header = csv.header();
+  while (csv.read_row(row)) {
+    ROWS_ARE_SAME(header, row, values[i]);
     i += 1;
   }
   REQUIRE(i == values.size());

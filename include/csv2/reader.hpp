@@ -163,35 +163,7 @@ using QuoteCharacter = details::CharSetting<details::CsvOption::quote_character>
 using SkipInitialSpace = details::BooleanSetting<details::CsvOption::skip_initial_space>;
 } // namespace option
 
-class Row {
-  std::vector<std::string_view> header_;
-  std::vector<std::string_view> fields_;
-  friend class Reader;
-public:
-  template <typename StringType>
-  std::string_view operator[](StringType&& h) const {
-    auto it = std::find(header_.begin(), header_.end(), std::forward<StringType>(h));
-    if (it != header_.end()) {
-      // header found
-      const size_t index = std::distance(header_.begin(), it);
-      return fields_[index];
-    } else {
-      throw std::runtime_error("error: Field not found");
-    }
-  }
-
-  std::vector<std::string_view> fields() const {
-    return fields_;
-  }
-
-  size_t size() const {
-    return fields_.size();
-  }
-
-  // Evalutes to false if fields_ is empty
-  // E.g., if IgnoreColumns is ignoring all columns
-  explicit operator bool() const { return !fields_.empty(); }
-};
+using Row = std::vector<std::string_view>;
 
 class Reader {
   size_t lines_{0};
@@ -415,26 +387,24 @@ public:
     return true;
   }
 
-  Row read_row() {
-    Row result;
+  bool read_row(Row& result) {
     if (current_row_index_ >= line_strings_.size())
-      return result;
-    result.header_ = header();
+      return false;
     current_row_ = line_strings_[current_row_index_];
     row_tokens_ = tokenize_current_row_();
-    result.fields_.clear();
+    result.clear();
     for (size_t i = 0; i < header_tokens_.size(); ++i) {
       if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(),
                                                 header_tokens_[i]) != ignore_columns_.end())
         continue;
       if (i < row_tokens_.size()) {
-        result.fields_.push_back(row_tokens_[i]);
+        result.push_back(row_tokens_[i]);
       } else {
-        result.fields_.push_back(empty_);
+        result.push_back(empty_);
       }
     }
     current_row_index_ += 1;
-    return result;
+    return true;
   }
 
   size_t rows() const { return lines_; }
