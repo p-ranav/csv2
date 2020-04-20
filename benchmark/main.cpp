@@ -20,9 +20,10 @@ int main(int argc, char **argv) {
   auto m1_start = std::chrono::high_resolution_clock::now();
 
   Reader csv{
-      option::Filename{std::string(argv[1])}, option::Delimiter{','}, option::SkipInitialSpace{true}
+      option::Delimiter{','}, option::SkipInitialSpace{true}
       // ...
   };
+  csv.open(argv[1]);
 
   auto m1_stop = std::chrono::high_resolution_clock::now();
   auto m2_start = m1_stop;

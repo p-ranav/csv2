@@ -17,11 +17,12 @@ using namespace csv2;
 int main() {
 
   Reader csv {
-    option::Filename{std::string("foo.csv")},
     option::Delimiter{','},
     option::SkipInitialSpace{true}
     // ...
   };
+
+  csv.open("foo.csv");
   
   Row next;
   while (csv.read_row(next)) {
@@ -35,7 +36,6 @@ int main() {
 
 | Property | Data Type | Description |
 |--------------------|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `option::Filename` | `std::string` | specifies the file to read. |
 | `option::Delimiter` | `char` | specifies the character which should separate fields (aka columns). Default = `','` |
 | `option::QuoteCharacter` | `char` | specifies the character to use as the quoting character. Default = `'"'` |
 | `option::SkipInitialSpace` | `bool` | specifies how to interpret whitespace immediately following the delimiter; if `false`, it means that whitespace immediately after a delimiter should be treated as part of the following field. Default = `false` |
@@ -53,9 +53,17 @@ public:
   // Constructor
   Reader(Args&&... options);
 
+  // Read CSV file
+  // Builds a vector of strings (lines)
+  void open(const std::string& filename);
+
   // Access rows
-  // Returns true if read was successful
   // Returns false if no more rows
+  // Else,
+  //   Starts from the first row
+  //   Tokenizes row string into fields
+  //   Saves fields inside `result`
+  //   Returns true if read was successful
   bool read_row(Row& result);
 
   // Shape

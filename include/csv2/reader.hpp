@@ -52,8 +52,7 @@ struct disjunction<Op, TailOps...>
     : if_else_type<Op::value, std::true_type, disjunction<TailOps...>>::type {};
 
 enum class CsvOption {
-  filename = 0,
-  delimiter,
+  delimiter = 0,
   column_names,
   ignore_columns,
   skip_empty_rows,
@@ -155,7 +154,6 @@ auto get_value(Settings &&settings)
 enum class Trim { none, leading, trailing, leading_and_trailing };
 
 namespace option {
-using Filename = details::StringSetting<details::CsvOption::filename>;
 using Delimiter = details::CharSetting<details::CsvOption::delimiter>;
 using ColumnNames = details::Setting<std::vector<std::string>, details::CsvOption::column_names>;
 using IgnoreColumns =
@@ -206,7 +204,7 @@ class Reader {
   std::vector<std::string> ignore_columns_;
 
   using Settings =
-      std::tuple<option::Filename, option::Delimiter, option::ColumnNames, option::IgnoreColumns,
+      std::tuple<option::Delimiter, option::ColumnNames, option::IgnoreColumns,
                  option::SkipEmptyRows, option::QuoteCharacter, option::SkipInitialSpace>;
   Settings settings_;
 
@@ -371,9 +369,7 @@ public:
                                         Settings, typename std::decay<Args>::type...>::value,
                                     void *>::type = nullptr>
   Reader(Args &&... args)
-      : settings_(details::get<details::CsvOption::filename>(option::Filename{""},
-                                                             std::forward<Args>(args)...),
-                  details::get<details::CsvOption::delimiter>(option::Delimiter{','},
+      : settings_(details::get<details::CsvOption::delimiter>(option::Delimiter{','},
                                                               std::forward<Args>(args)...),
                   details::get<details::CsvOption::column_names>(option::ColumnNames{},
                                                                  std::forward<Args>(args)...),
@@ -385,12 +381,20 @@ public:
                                                                     std::forward<Args>(args)...),
                   details::get<details::CsvOption::skip_initial_space>(
                       option::SkipInitialSpace{false}, std::forward<Args>(args)...)) {
-    const auto &filename = get_value<details::CsvOption::filename>();
     header_tokens_ = get_value<details::CsvOption::column_names>();
     delimiter_ = get_value<details::CsvOption::delimiter>();
     ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
     quote_character_ = get_value<details::CsvOption::quote_character>();
     skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
+  }
+
+  void open(const std::string& filename) {
+    // Prepare to parse new file
+    lines_ = 0;
+    header_string_.clear();
+    line_strings_.clear();
+    header_tokens_ = get_value<details::CsvOption::column_names>();
+    current_row_index_ = 0;
 
     // Large I/O buffer to speed up ifstream read
     const uint64_t stream_buffer_size = 1000000;
@@ -404,7 +408,7 @@ public:
     if (!infile.is_open())
       throw std::runtime_error("error: Failed to open file " + filename);
 
-    read_file_(std::move(infile));
+    read_file_(std::move(infile)); 
   }
 
   bool read_row(Row& result) {

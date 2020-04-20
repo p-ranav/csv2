@@ -13,7 +13,8 @@ void ROWS_ARE_SAME(Row r1, ExpectedRow r2) {
 }
 
 TEST_CASE("Parse an empty CSV" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/empty.csv"}};
+  Reader csv;
+  csv.open("inputs/empty.csv");
   auto rows = csv.rows();
   auto cols = csv.cols();
   REQUIRE(rows == 0);
@@ -22,8 +23,9 @@ TEST_CASE("Parse an empty CSV" * test_suite("Reader")) {
 
 TEST_CASE("Parse file that doesn't exist" * test_suite("Reader")) {
   bool exception_thrown = false;
+  Reader csv;
   try {
-    Reader csv{option::Filename{"inputs/missing.csv"}};
+    csv.open("inputs/missing.csv");
   } catch (std::exception &) {
     exception_thrown = true;
   }
@@ -31,7 +33,8 @@ TEST_CASE("Parse file that doesn't exist" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_01.csv"}};
+  Reader csv;
+  csv.open("inputs/test_01.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}},
                                   ExpectedRow{{"a", "4"}, {"b", "5"}, {"c", "6"}}};
@@ -48,7 +51,8 @@ TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {
 
 TEST_CASE("Parse the most basic of CSV buffers with ', ' delimiter using skip_initial_space" *
           test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_02.csv"}, option::SkipInitialSpace{true}};
+  Reader csv{option::SkipInitialSpace{true}};
+  csv.open("inputs/test_02.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}},
                                   ExpectedRow{{"a", "4"}, {"b", "5"}, {"c", "6"}}};
@@ -64,7 +68,8 @@ TEST_CASE("Parse the most basic of CSV buffers with ', ' delimiter using skip_in
 }
 
 TEST_CASE("Parse headers with double quotes" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_06.csv"}};
+  Reader csv;
+  csv.open("inputs/test_06.csv");
   std::vector<std::string_view> header = csv.header();
   REQUIRE(header.size() == 3);
   REQUIRE(header[0] == "\"Free trip to A,B\"");
@@ -73,7 +78,8 @@ TEST_CASE("Parse headers with double quotes" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse headers with pairs of single-quotes" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_07.csv"}, option::QuoteCharacter{'\''}};
+  Reader csv{option::QuoteCharacter{'\''}};
+  csv.open("inputs/test_07.csv");
   std::vector<std::string_view> header = csv.header();
   REQUIRE(header.size() == 3);
   REQUIRE(header[0] == "''Free trip to A,B''");
@@ -82,7 +88,8 @@ TEST_CASE("Parse headers with pairs of single-quotes" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse row with double quotes" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_05.csv"}};
+  Reader csv;
+  csv.open("inputs/test_05.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "\"Free trip to A,B\""},
                                               {"\"\"b\"\"", "\"5.89\""},
@@ -99,7 +106,8 @@ TEST_CASE("Parse row with double quotes" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_04.csv"}, option::QuoteCharacter{'\''}};
+  Reader csv{option::QuoteCharacter{'\''}};
+  csv.open("inputs/test_04.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{
       {"a", "'Free trip to A,B'"}, {"''b''", "'5.89'"}, {"'c'", "'Special rate '1.79''"}}};
@@ -115,7 +123,8 @@ TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_03.csv"}};
+  Reader csv;
+  csv.open("inputs/test_03.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"\"a\"", "1"}, {"\"b\\nc\"", "2"}, {"\"d\"", "3"}}};
 
@@ -130,8 +139,8 @@ TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse the most basic of CSV buffers - No header row" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_08.csv"},
-             option::ColumnNames{std::vector<std::string>{"a", "b", "c"}}};
+  Reader csv{option::ColumnNames{std::vector<std::string>{"a", "b", "c"}}};
+  csv.open("inputs/test_08.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}},
                                   ExpectedRow{{"a", "4"}, {"b", "5"}, {"c", "6"}},
@@ -148,7 +157,8 @@ TEST_CASE("Parse the most basic of CSV buffers - No header row" * test_suite("Re
 }
 
 TEST_CASE("Parse the most basic of CSV buffers - Space delimiter" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_09.csv"}, option::Delimiter{' '}};
+  Reader csv{option::Delimiter{' '}};
+  csv.open("inputs/test_09.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"first_name", "Eric"}, {"last_name", "Idle"}},
                                   ExpectedRow{{"first_name", "John"}, {"last_name", "Cleese"}}};
@@ -164,8 +174,8 @@ TEST_CASE("Parse the most basic of CSV buffers - Space delimiter" * test_suite("
 }
 
 TEST_CASE("Parse the most basic of CSV buffers and ignore 1 column" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_01.csv"},
-             option::IgnoreColumns{std::vector<std::string>{"a"}}};
+  Reader csv{option::IgnoreColumns{std::vector<std::string>{"a"}}};
+  csv.open("inputs/test_01.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"b", "2"}, {"c", "3"}},
                                   ExpectedRow{{"b", "5"}, {"c", "6"}}};
@@ -181,8 +191,8 @@ TEST_CASE("Parse the most basic of CSV buffers and ignore 1 column" * test_suite
 }
 
 TEST_CASE("Parse the most basic of CSV buffers and ignore 2 columns" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_01.csv"},
-             option::IgnoreColumns{std::vector<std::string>{"a", "b"}}};
+  Reader csv{option::IgnoreColumns{std::vector<std::string>{"a", "b"}}};
+  csv.open("inputs/test_01.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"c", "3"}}, ExpectedRow{{"c", "6"}}};
 
@@ -197,8 +207,8 @@ TEST_CASE("Parse the most basic of CSV buffers and ignore 2 columns" * test_suit
 }
 
 TEST_CASE("Parse the most basic of CSV buffers and ignore all columns" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_01.csv"},
-             option::IgnoreColumns{std::vector<std::string>{"a", "b", "c"}}};
+  Reader csv{option::IgnoreColumns{std::vector<std::string>{"a", "b", "c"}}};
+  csv.open("inputs/test_01.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{}, ExpectedRow{}};
 
@@ -214,9 +224,9 @@ TEST_CASE("Parse the most basic of CSV buffers and ignore all columns" * test_su
 
 TEST_CASE("Parse the most basic of CSV buffers and ignore age/gender columns" *
           test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/test_14.csv"},
-             option::IgnoreColumns{std::vector<std::string>{"age", "gender"}},
+  Reader csv{option::IgnoreColumns{std::vector<std::string>{"age", "gender"}},
              option::SkipInitialSpace{true}};
+  csv.open("inputs/test_14.csv");
 
   std::vector<ExpectedRow> values{
       ExpectedRow{
@@ -237,7 +247,8 @@ TEST_CASE("Parse the most basic of CSV buffers and ignore age/gender columns" *
 }
 
 TEST_CASE("Parse CSV with empty lines" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/empty_lines.csv"}};
+  Reader csv;
+  csv.open("inputs/empty_lines.csv");
 
   std::vector<ExpectedRow> values{
       ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}},
@@ -260,7 +271,8 @@ TEST_CASE("Parse CSV with empty lines" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse CSV with empty lines - skip empty rows" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/empty_lines.csv"}, option::SkipEmptyRows{true}};
+  Reader csv{option::SkipEmptyRows{true}};
+  csv.open("inputs/empty_lines.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}},
                                   ExpectedRow{{"a", "4"}, {"b", "5"}, {"c", "6"}},
@@ -278,7 +290,8 @@ TEST_CASE("Parse CSV with empty lines - skip empty rows" * test_suite("Reader"))
 }
 
 TEST_CASE("Parse CSV with missing columns" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/missing_columns.csv"}};
+  Reader csv;
+  csv.open("inputs/missing_columns.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", ""}, {"d", "4"}},
                                   ExpectedRow{{"a", "5"}, {"b", "6"}, {"c", ""}, {"d", "8"}}};
@@ -294,7 +307,8 @@ TEST_CASE("Parse CSV with missing columns" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse CSV with missing columns II" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/missing_columns_2.csv"}, option::Delimiter{';'}};
+  Reader csv{option::Delimiter{';'}};
+  csv.open("inputs/missing_columns_2.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}},
                                   ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", ""}},
@@ -314,7 +328,8 @@ TEST_CASE("Parse CSV with missing columns II" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse CSV with too many columns" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/too_many_columns.csv"}, option::SkipInitialSpace{true}};
+  Reader csv{option::SkipInitialSpace{true}};
+  csv.open("inputs/too_many_columns.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}},
                                   ExpectedRow{{"a", "6"}, {"b", "7"}, {"c", ""}}};
@@ -330,7 +345,8 @@ TEST_CASE("Parse CSV with too many columns" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse single row" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/single_row.csv"}, option::SkipInitialSpace{true}};
+  Reader csv{option::SkipInitialSpace{true}};
+  csv.open("inputs/single_row.csv");
 
   std::vector<ExpectedRow> values{ExpectedRow{{"a", "1"}, {"b", "2"}, {"c", "3"}}};
 
@@ -345,7 +361,8 @@ TEST_CASE("Parse single row" * test_suite("Reader")) {
 }
 
 TEST_CASE("Parse exceptions" * test_suite("Reader")) {
-  Reader csv{option::Filename{"inputs/exceptions.csv"}, option::SkipInitialSpace{true}};
+  Reader csv{option::SkipInitialSpace{true}};
+  csv.open("inputs/exceptions.csv");
 
   std::vector<ExpectedRow> values;
   values.push_back(ExpectedRow{});
