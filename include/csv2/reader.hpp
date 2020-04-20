@@ -187,6 +187,10 @@ public:
   size_t size() const {
     return fields_.size();
   }
+
+  // Evalutes to false if fields_ is empty
+  // E.g., if IgnoreColumns is ignoring all columns
+  explicit operator bool() const { return !fields_.empty(); }
 };
 
 class Reader {
@@ -411,9 +415,10 @@ public:
     return true;
   }
 
-  bool read_row(Row& result) {
+  Row read_row() {
+    Row result;
     if (current_row_index_ >= line_strings_.size())
-      return false;
+      return result;
     result.header_ = header();
     current_row_ = line_strings_[current_row_index_];
     row_tokens_ = tokenize_current_row_();
@@ -429,7 +434,7 @@ public:
       }
     }
     current_row_index_ += 1;
-    return true;
+    return result;
   }
 
   size_t rows() const { return lines_; }

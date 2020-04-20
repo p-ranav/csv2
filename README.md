@@ -17,20 +17,16 @@ using namespace csv2;
 
 int main() {
 
-  // Construct a csv2::Reader with options
   Reader csv {
     option::Delimiter{','},
     option::SkipInitialSpace{true}
     // ...
   };
 
-  // Load the CSV file
   if (csv.open("foo.csv")) {
-    // Iterate over rows
-    Row next;
-    while (csv.read_row(next)) {
+    while (auto row = csv.read_row()) {
       // Do something with row
-      // auto field = next["column"]
+      // auto field = row["column"]
     }
   }
 }
@@ -62,14 +58,8 @@ public:
   // Returns true if file read was successful
   bool open(StringType&& filename);
 
-  // Access rows
-  // Returns false if no more rows
-  // Else,
-  //   Starts from the first row
-  //   Tokenizes row string into fields
-  //   Saves fields inside `result`
-  //   Returns true if read was successful
-  bool read_row(Row& result);
+  // Access next row
+  Row read_row();
 
   // Shape
   size_t rows() const;
