@@ -111,8 +111,8 @@ g++ -I../include -O3 -std=c++17 -o main main.cpp
 
 This benchmarks measures two execution times:
 
-* **Measurement 1 (M1)**: Time taken to load input CSV file and build the list of lines (`std::vector<std::string>`).
-* **Measurement 2 (M2)**: Time taken to iterate over all the lines, tokenize each line and construct a `std::vector<Row>` objects.
+* **Measurement 1 (M1)**: Load input CSV file and build the list of lines (`std::vector<std::string>`).
+* **Measurement 2 (M2)**: Iterate over all the lines, tokenize each line and construct a `std::vector<Row>` objects.
 
 ### Hardware 
 
