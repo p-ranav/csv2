@@ -186,6 +186,10 @@ public:
     return fields_[index];
   }
 
+  std::vector<std::string_view> fields() const {
+    return fields_;
+  }
+
   size_t size() const {
     return fields_.size();
   }
