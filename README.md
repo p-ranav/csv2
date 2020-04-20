@@ -83,6 +83,8 @@ The `csv2::Row` data structure is used to access the fields in each row of the C
 
 ```cpp
 class Row {
+  std::vector<std::string_view> header_;
+  std::vector<std::string_view> fields_;
 public:
   // Look up field by header `key`
   std::string_view operator[](string_type key) const;
