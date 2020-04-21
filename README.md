@@ -2,7 +2,7 @@
   <img height="75" src="img/logo.png" alt="csv2"/>
 </p>
 
-`csv2` is a fast, single-threaded CSV parser written in `C++17`.
+`csv2` is a fast, single-threaded CSV parser written in `C++17`. This project is a work-in-progress.
 
 ## Highlights
 * Single-threaded - No additional worker threads.
