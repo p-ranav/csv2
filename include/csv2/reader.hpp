@@ -163,14 +163,37 @@ using QuoteCharacter = details::CharSetting<details::CsvOption::quote_character>
 using SkipInitialSpace = details::BooleanSetting<details::CsvOption::skip_initial_space>;
 } // namespace option
 
-using Row = std::vector<std::string_view>;
+class Cell {
+  std::string_view raw_;
+  bool escaped_{false};
+  bool end_of_row_{false};
+  friend class Reader;
+
+public:
+  std::string_view raw() {
+    return raw_;
+  }
+
+  template <typename Container>
+  std::string converted(Container& result) {
+    result = Container(raw_.begin(), raw_.end());
+    for (size_t i = 1; i < result.size(); ++i) {
+      if (result[i] == '"' && result[i - 1] == '"') {
+        result.erase(i - 1, 1);
+      }
+    }
+    return result;
+  }
+};
+
+using Row = std::vector<Cell>;
 
 class Reader {
   std::size_t lines_{0};
   std::string header_string_;
   std::vector<std::string> line_strings_;
-  std::vector<std::string> header_tokens_;
-  std::vector<std::string_view> row_tokens_;
+  Row header_tokens_;
+  Row row_tokens_;
   std::string empty_{""};
   std::string_view current_row_;
   std::size_t current_row_index_{0};
@@ -259,54 +282,71 @@ class Reader {
     line_handler(nullptr, 0); // eof
   }
 
-  bool next_column_end_(size_t &end) {
+  bool next_column_end_(size_t &end, bool& escaped, const std::size_t& current_row_size) {
     if (end >= current_row_.size())
       return false;
     std::size_t last_quote_location = 0;
     bool quote_opened = false;
 
-    while (end < current_row_.size() &&
-           (current_row_[end] != delimiter_ || (current_row_[end] == delimiter_ && quote_opened))) {
+    while (end < current_row_size &&
+            (current_row_[end] != delimiter_ || 
+            (current_row_[end] == delimiter_ && quote_opened))) {
       if (current_row_[end] == quote_character_) {
         quote_opened = true;
 
-        if (end + 1 < current_row_.size() && current_row_[end + 1] == delimiter_) {
+        if (end + 1 < current_row_size && current_row_[end + 1] == delimiter_) {
           // end of field, quote is closed, moving on
           end += 1;
           return true;
         }
 
         // Check if previous character was also a quote
-        if (last_quote_location == end - 1) {
-          if (header_tokens_.empty()) { // this is the header row, mutate header_string_
-            header_string_.erase(end, 1);
-            current_row_ = header_string_;
-          } else { // this is not the header row, mutate line_strings_[index]
-            line_strings_[current_row_index_].erase(end, 1);
-            current_row_ = line_strings_[current_row_index_];
-          }
-          last_quote_location = end;
-          end -= 1;
-        } else
-          last_quote_location = end;
+        if (last_quote_location == end - 1)
+          escaped = true;
+        last_quote_location = end;
       }
       end += 1;
     }
     return true;
   }
 
-  std::vector<std::string_view> tokenize_current_row_() {
+  Row tokenize_header() {
     std::size_t start = 0, end = start;
-    std::vector<std::string_view> result;
-    while (next_column_end_(end)) {
-      result.push_back(current_row_.substr(start, end - start));
+    const size_t current_row_size = current_row_.size();
+    bool escaped = false;
+    Row result;
+    while (next_column_end_(end, escaped, current_row_size)) {
+      Cell c;
+      c.raw_ = std::string_view(current_row_).substr(start, end - start);
+      c.escaped_ = escaped;
       // end is at the delimiter
-      if (skip_initial_space_ && (end + 1 < current_row_.size()) && current_row_[end + 1] == ' ')
-        end += 1;
       start = end + 1;
       end = start;
+      if (end >= current_row_size)
+        c.end_of_row_ = true;
+      result.push_back(std::move(c));
+      escaped = false;
     }
     return result;
+  }
+
+  void tokenize_current_row_(Row& result) {
+    std::size_t start = 0, end = start;
+    const size_t current_row_size = current_row_.size();
+    bool escaped = false;
+    result.clear();
+    while (next_column_end_(end, escaped, current_row_size)) {
+      Cell c;
+      c.raw_ = std::string_view(current_row_).substr(start, end - start);
+      c.escaped_ = escaped;
+      // end is at the delimiter
+      start = end + 1;
+      end = start;
+      if (end >= current_row_size)
+        c.end_of_row_ = true;
+      result.push_back(std::move(c));
+      escaped = false;
+    }
   }
 
   void read_file_(std::ifstream infile) {
@@ -315,24 +355,15 @@ class Reader {
     read_file_fast_(infile, [&, this](char *buffer, int length) -> void {
       if (!buffer)
         return;
-      std::string line;
-      if (length > 0 && buffer[length - 1] == '\n') {
-        if (length > 1 && buffer[length - 2] == '\r') {
-          line = std::string{buffer, static_cast<size_t>(length - 2)};
-        } else {
-          line = std::string{buffer, static_cast<size_t>(length - 1)};
-        }
-      } else {
-        line = std::string{buffer, static_cast<size_t>(length)};
-      }
+      std::string line = std::string{buffer, static_cast<size_t>(length)};
 
       if (skip_empty_rows && line.empty())
         return;
       if (header_tokens_.empty()) {
         header_string_ = std::move(line);
         current_row_ = header_string_;
-        const auto &header_tokens = tokenize_current_row_();
-        header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
+        header_tokens_ = tokenize_header();
+        row_tokens_.reserve(header_tokens_.size());
         return;
       }
       lines_ += 1;
@@ -358,7 +389,6 @@ public:
                                                                     std::forward<Args>(args)...),
                   details::get<details::CsvOption::skip_initial_space>(
                       option::SkipInitialSpace{false}, std::forward<Args>(args)...)) {
-    header_tokens_ = get_value<details::CsvOption::column_names>();
     delimiter_ = get_value<details::CsvOption::delimiter>();
     ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
     quote_character_ = get_value<details::CsvOption::quote_character>();
@@ -371,7 +401,6 @@ public:
     lines_ = 0;
     header_string_.clear();
     line_strings_.clear();
-    header_tokens_ = get_value<details::CsvOption::column_names>();
     current_row_index_ = 0;
 
     // Large I/O buffer to speed up ifstream read
@@ -392,18 +421,7 @@ public:
     if (current_row_index_ >= line_strings_.size())
       return false;
     current_row_ = line_strings_[current_row_index_];
-    row_tokens_ = tokenize_current_row_();
-    result.clear();
-    for (size_t i = 0; i < header_tokens_.size(); ++i) {
-      if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(),
-                                                header_tokens_[i]) != ignore_columns_.end())
-        continue;
-      if (i < row_tokens_.size()) {
-        result.push_back(row_tokens_[i]);
-      } else {
-        result.push_back(empty_);
-      }
-    }
+    tokenize_current_row_(result);
     current_row_index_ += 1;
     return true;
   }
@@ -414,15 +432,8 @@ public:
     return header_tokens_.size() - get_value<details::CsvOption::ignore_columns>().size();
   }
 
-  std::vector<std::string_view> header() const {
-    std::vector<std::string_view> result;
-    for (auto &h : header_tokens_) {
-      if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(),
-                                      h) != ignore_columns_.end())
-        continue;
-      result.push_back(h);
-    }
-    return result;
+  Row header() const {
+    return header_tokens_;
   }
 };
 

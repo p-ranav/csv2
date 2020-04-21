@@ -26,16 +26,16 @@ int main(int argc, char **argv) {
   if (csv.open(argv[1])) {
     auto m1_stop = std::chrono::high_resolution_clock::now();
     auto m2_start = m1_stop;
-    
-    std::vector<Row> rows;
+
+    size_t i = 0;
     Row next;
     while (csv.read_row(next)) {
-      rows.push_back(std::move(next));
+      i += 1;
     }
     auto m2_stop = std::chrono::high_resolution_clock::now();
     
     std::cout << "Stats:\n";
-    std::cout << "Rows: " << csv.rows() << "\n";
+    std::cout << "Rows: " << i << "\n";
     std::cout << "Cols: " << csv.cols() << "\n";
     std::cout << "Measurement 1: ";
     print_exec_time(m1_start, m1_stop);
