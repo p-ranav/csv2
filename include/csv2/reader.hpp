@@ -212,7 +212,7 @@ class Reader {
     file.read(buffer, buffer_length);
 
     int string_end = -1;
-    int string_start;
+    int string_start{0};
     int64_t buffer_position_in_file = 0;
     while (buffer_length > 0) {
       int i = string_end + 1;
