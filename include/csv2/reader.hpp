@@ -166,14 +166,14 @@ using SkipInitialSpace = details::BooleanSetting<details::CsvOption::skip_initia
 using Row = std::vector<std::string_view>;
 
 class Reader {
-  size_t lines_{0};
+  std::size_t lines_{0};
   std::string header_string_;
   std::vector<std::string> line_strings_;
   std::vector<std::string> header_tokens_;
   std::vector<std::string_view> row_tokens_;
   std::string empty_{""};
   std::string_view current_row_;
-  size_t current_row_index_{0};
+  std::size_t current_row_index_{0};
   char delimiter_;
   char quote_character_;
   bool skip_initial_space_{false};
@@ -208,7 +208,7 @@ class Reader {
     file.seekg(0, std::ios::beg);
     buffer_size = std::min(buffer_size, file_size);
     char *buffer = new char[buffer_size];
-    blkcnt_t buffer_length = buffer_size;
+    auto buffer_length = buffer_size;
     file.read(buffer, buffer_length);
 
     int string_end = -1;
@@ -256,13 +256,13 @@ class Reader {
       }
     }
     delete[] buffer;
-    line_handler(0, 0); // eof
+    line_handler(nullptr, 0); // eof
   }
 
   bool next_column_end_(size_t &end) {
     if (end >= current_row_.size())
       return false;
-    size_t last_quote_location = 0;
+    std::size_t last_quote_location = 0;
     bool quote_opened = false;
 
     while (end < current_row_.size() &&
@@ -296,7 +296,7 @@ class Reader {
   }
 
   std::vector<std::string_view> tokenize_current_row_() {
-    size_t start = 0, end = start;
+    std::size_t start = 0, end = start;
     std::vector<std::string_view> result;
     while (next_column_end_(end)) {
       result.push_back(current_row_.substr(start, end - start));
@@ -331,7 +331,7 @@ class Reader {
       if (header_tokens_.empty()) {
         header_string_ = std::move(line);
         current_row_ = header_string_;
-        const auto &&header_tokens = tokenize_current_row_();
+        const auto &header_tokens = tokenize_current_row_();
         header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
         return;
       }
@@ -408,9 +408,9 @@ public:
     return true;
   }
 
-  size_t rows() const { return lines_; }
+  std::size_t rows() const { return lines_; }
 
-  size_t cols() const {
+  std::size_t cols() const {
     return header_tokens_.size() - get_value<details::CsvOption::ignore_columns>().size();
   }
 
