@@ -10,6 +10,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <cstring>
 
 namespace csv2 {
 

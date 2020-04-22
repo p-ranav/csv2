@@ -74,7 +74,7 @@ mkdir build && cd build
 cmake -DCSV2_TEST=ON ..
 make
 cd test
-./test
+./csv2_test
 ```
 
 ## Contributing
