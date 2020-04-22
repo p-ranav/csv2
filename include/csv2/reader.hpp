@@ -1,24 +1,24 @@
 #pragma once
 #include <chrono>
+#include <cstring>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <vector>
 #include <utility>
-#include <string>
-#include <cstring>
+#include <vector>
 
 namespace csv2 {
 
 template <char delimiter, char quote_character> class Reader {
-  int fd_;                 // file descriptor
-  struct stat file_info_;  // file info
-  char *map_;              // memory-mapped buffer
-  bool file_opened_;       // if true, cleanup map in next .read() call
+  int fd_;                // file descriptor
+  struct stat file_info_; // file info
+  char *map_;             // memory-mapped buffer
+  bool file_opened_;      // if true, cleanup map in next .read() call
 
 public:
   Reader() : fd_(-1), file_info_{}, map_(nullptr), file_opened_(false) {}
@@ -55,14 +55,16 @@ public:
   class CellIterator;
 
   class Cell {
-    char *buffer_;
-    size_t start_;
-    size_t end_;
-    bool escaped_;
+    char *buffer_; // Pointer to memory-mapped buffer
+    size_t start_; // Start index of cell content
+    size_t end_;   // End index of cell content
+    bool escaped_; // Does the cell have escaped content?
     friend class Row;
     friend class CellIterator;
 
   public:
+    // If cell is escaped, convert and return correct cell contents,
+    // e.g., """foo""" => ""foo""
     std::string value() {
       std::string result;
       if (start_ >= end_)
@@ -80,9 +82,9 @@ public:
   };
 
   class Row {
-    char *buffer_;
-    size_t start_;
-    size_t end_;
+    char *buffer_; // Pointer to memory-mapped buffer
+    size_t start_; // Start index of row content
+    size_t end_;   // End index of row content
     friend class RowIterator;
 
   public:
@@ -155,7 +157,6 @@ public:
     };
 
     CellIterator begin() { return CellIterator(buffer_, end_ - start_, start_, end_); }
-
     CellIterator end() { return CellIterator(buffer_, end_ - start_, end_, end_); }
   };
 
@@ -182,7 +183,8 @@ public:
       result.start_ = start_;
       result.end_ = end_;
 
-      if (char *ptr = static_cast<char *>(memchr(&buffer_[start_], '\n', (buffer_size_ - start_)))) {
+      if (char *ptr =
+              static_cast<char *>(memchr(&buffer_[start_], '\n', (buffer_size_ - start_)))) {
         end_ = start_ + (ptr - &buffer_[start_]);
         result.end_ = end_;
         if (end_ + 1 < buffer_size_)
@@ -195,14 +197,14 @@ public:
       return result;
     }
 
-    bool operator!=(const RowIterator &rhs) { 
-      return start_ != rhs.start_;  
-    }
+    bool operator!=(const RowIterator &rhs) { return start_ != rhs.start_; }
   };
 
-  RowIterator begin() const { 
-    if (file_info_.st_size == 0) return end();
-    return RowIterator(map_, file_info_.st_size, 0); }
+  RowIterator begin() const {
+    if (file_info_.st_size == 0)
+      return end();
+    return RowIterator(map_, file_info_.st_size, 0);
+  }
 
   RowIterator end() const { return RowIterator(map_, file_info_.st_size, file_info_.st_size + 1); }
 };
