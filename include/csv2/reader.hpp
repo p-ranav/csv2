@@ -15,12 +15,13 @@
 namespace csv2 {
 
 template <char delimiter, char quote_character> class Reader {
-  char *map_;
-  struct stat file_info_;
-  int fd_;
+  int fd_;                 // file descriptor
+  struct stat file_info_;  // file info
+  char *map_;              // memory-mapped buffer
+  bool file_opened_;       // if true, cleanup map in next .read() call
 
 public:
-  Reader() : map_(nullptr), fd_(0) {}
+  Reader() : fd_(-1), file_info_{}, map_(nullptr), file_opened_(false) {}
   ~Reader() {
     // Free the mmapped memory
     munmap(map_, file_info_.st_size);
@@ -30,31 +31,36 @@ public:
   }
 
   bool read(const std::string &filename) {
-    fd_ = open(filename.c_str(), O_RDONLY, (mode_t)0600);
+    if (file_opened_) {
+      munmap(map_, file_info_.st_size);
+      close(fd_);
+    }
+    fd_ = open(filename.c_str(), O_RDONLY, static_cast<mode_t>(0600));
 
     if ((fd_ == -1) || (fstat(fd_, &file_info_) == -1) || (file_info_.st_size == 0)) {
       return false;
     }
 
-    map_ = (char *)mmap(0, file_info_.st_size, PROT_READ, MAP_SHARED, fd_, 0);
+    map_ = static_cast<char *>(mmap(nullptr, file_info_.st_size, PROT_READ, MAP_SHARED, fd_, 0));
     if (map_ == MAP_FAILED) {
       close(fd_);
       return false;
     }
+    file_opened_ = true;
     return true;
   }
 
-  class row_iterator;
-  class row;
-  class cell_iterator;
+  class RowIterator;
+  class Row;
+  class CellIterator;
 
-  class cell {
+  class Cell {
     char *buffer_;
     size_t start_;
     size_t end_;
     bool escaped_;
-    friend class row;
-    friend class cell_iterator;
+    friend class Row;
+    friend class CellIterator;
 
   public:
     std::string value() {
@@ -73,15 +79,15 @@ public:
     }
   };
 
-  class row {
+  class Row {
     char *buffer_;
     size_t start_;
     size_t end_;
-    friend class row_iterator;
+    friend class RowIterator;
 
   public:
-    class cell_iterator {
-      friend class row;
+    class CellIterator {
+      friend class Row;
       char *buffer_;
       size_t buffer_size_;
       size_t start_;
@@ -89,18 +95,18 @@ public:
       size_t end_;
 
     public:
-      cell_iterator(char *buffer, size_t buffer_size, size_t start, size_t end)
+      CellIterator(char *buffer, size_t buffer_size, size_t start, size_t end)
           : buffer_(buffer), buffer_size_(buffer_size), start_(start), current_(start_), end_(end) {
       }
 
-      cell_iterator &operator++() {
+      CellIterator &operator++() {
         current_ += 1;
         return *this;
       }
 
-      cell operator*() {
+      Cell operator*() {
         bool escaped{false};
-        class cell cell;
+        class Cell cell;
         cell.buffer_ = buffer_;
         cell.start_ = current_;
         cell.end_ = end_;
@@ -145,15 +151,15 @@ public:
         return cell;
       }
 
-      bool operator!=(const cell_iterator &rhs) { return current_ != rhs.current_; }
+      bool operator!=(const CellIterator &rhs) { return current_ != rhs.current_; }
     };
 
-    cell_iterator begin() { return cell_iterator(buffer_, end_ - start_, start_, end_); }
+    CellIterator begin() { return CellIterator(buffer_, end_ - start_, start_, end_); }
 
-    cell_iterator end() { return cell_iterator(buffer_, end_ - start_, end_, end_); }
+    CellIterator end() { return CellIterator(buffer_, end_ - start_, end_, end_); }
   };
 
-  class row_iterator {
+  class RowIterator {
     friend class Reader;
     char *buffer_;
     size_t buffer_size_;
@@ -161,22 +167,22 @@ public:
     size_t end_;
 
   public:
-    row_iterator(char *buffer, size_t buffer_size, size_t start)
+    RowIterator(char *buffer, size_t buffer_size, size_t start)
         : buffer_(buffer), buffer_size_(buffer_size), start_(start), end_(start_) {}
 
-    row_iterator &operator++() {
+    RowIterator &operator++() {
       start_ = end_ + 1;
       end_ = start_;
       return *this;
     }
 
-    row operator*() {
-      row result;
+    Row operator*() {
+      Row result;
       result.buffer_ = buffer_;
       result.start_ = start_;
       result.end_ = end_;
 
-      if (char *ptr = (char *)memchr(&buffer_[start_], '\n', (buffer_size_ - start_))) {
+      if (char *ptr = static_cast<char *>(memchr(&buffer_[start_], '\n', (buffer_size_ - start_)))) {
         end_ = start_ + (ptr - &buffer_[start_]);
         result.end_ = end_;
         if (end_ + 1 < buffer_size_)
@@ -189,15 +195,15 @@ public:
       return result;
     }
 
-    bool operator!=(const row_iterator &rhs) { 
+    bool operator!=(const RowIterator &rhs) { 
       return start_ != rhs.start_;  
     }
   };
 
-  row_iterator begin() const { 
+  RowIterator begin() const { 
     if (file_info_.st_size == 0) return end();
-    return row_iterator(map_, file_info_.st_size, 0); }
+    return RowIterator(map_, file_info_.st_size, 0); }
 
-  row_iterator end() const { return row_iterator(map_, file_info_.st_size, file_info_.st_size + 1); }
+  RowIterator end() const { return RowIterator(map_, file_info_.st_size, file_info_.st_size + 1); }
 };
 } // namespace csv2
