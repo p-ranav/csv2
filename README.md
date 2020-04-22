@@ -36,17 +36,13 @@ int main() {
 
 ## Performance Benchmark
 
-Compile `benchmark/main.cpp` using:
+This benchmarks measures how long it takes on average for `csv2` to memory-map the input CSV file and iterate over every cell in the table. See `benchmark/main.cpp` for more details. Assume that the cache has been warmed up.
 
 ```bash
 cd benchmark
 g++ -I../include -O3 -std=c++17 -o main main.cpp
 ./main <csv_file>
 ```
-
-### Measurement
-
-This benchmarks measures how long it takes on average for `csv2` to memory-map the input CSV file and iterate over every cell in the table. See `benchmark/main.cpp` for more details. Assume that the cache has been warmed up.
 
 ### Hardware 
 
@@ -57,7 +53,7 @@ Memory: 32 GB 2400 MHz DDR4
 Operating System: macOS Catalina version 10.15.3
 ```
 
-### Results (as of 20 APR 2020)
+### Results (as of 21 APR 2020)
 
 | Dataset | File Size | Rows | Cols | Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|
