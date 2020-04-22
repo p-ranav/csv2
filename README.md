@@ -2,6 +2,8 @@
   <img height="75" src="img/logo.png" alt="csv2"/>
 </p>
 
+## Highlights
+
 * This is a very barebones CSV parser
   - `mmap` the CSV file
   - Parse without allocations
