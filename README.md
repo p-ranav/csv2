@@ -36,7 +36,7 @@ int main() {
 
 ## Performance Benchmark
 
-This benchmarks measures how long it takes on average for `csv2` to memory-map the input CSV file and iterate over every cell in the table. See `benchmark/main.cpp` for more details. Assume that the cache has been warmed up.
+This benchmarks measures how long it takes on average for `csv2` to memory-map the input CSV file and iterate over every cell in the CSV. See `benchmark/main.cpp` for more details. Assume that the cache has been warmed up.
 
 ```bash
 cd benchmark
