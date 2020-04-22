@@ -1,7 +1,6 @@
 #pragma once
 #include <chrono>
 #include <fcntl.h>
-#include <iostream>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,19 +9,17 @@
 #include <unistd.h>
 #include <vector>
 #include <utility>
+#include <string>
 
 namespace csv2 {
 
 template <char delimiter, char quote_character> class Reader {
-  char *map{nullptr};
-  struct stat file_info {
-    0
-  };
-  int fd{0};
+  char *map;
+  struct stat file_info;
+  int fd;
 
 public:
-  Reader() {}
-
+  Reader() : map(nullptr), fd(0) {}
   ~Reader() {
     // Free the mmapped memory
     munmap(map, file_info.st_size);
@@ -69,8 +66,6 @@ public:
 
   public:
     std::string value() {
-      std::cout << "Constructing value\n";
-      std::cout << start_ << " " << end_ << "\n";
       std::string result;
       if (start_ >= end_)
         return "";
@@ -147,9 +142,14 @@ public:
                   }
                 }
               }
+              current_ = i;
+            } else {
+              // Not delimiter or quote
+              current_ = i;
             }
           }
         }
+        cell.end_ = current_ + 1;
         return cell;
       }
 
@@ -170,7 +170,7 @@ public:
 
   public:
     row_iterator(char *buffer, size_t buffer_size, size_t start)
-        : buffer_(buffer), buffer_size_(buffer_size), start_(start), end_(start) {}
+        : buffer_(buffer), buffer_size_(buffer_size), start_(start), end_(start_) {}
 
     row_iterator &operator++() {
       start_ = end_ + 1;
@@ -187,31 +187,25 @@ public:
       if (char *ptr = (char *)memchr(&buffer_[start_], '\n', (buffer_size_ - start_))) {
         end_ = start_ + (ptr - &buffer_[start_]);
         result.end_ = end_;
-        start_ = end_ + 1;
+        if (end_ + 1 < buffer_size_)
+          start_ = end_ + 1;
       } else {
-        result.end_ = end_ = buffer_size_;
+        // last row
+        end_ = buffer_size_;
+        result.end_ = end_;
       }
       return result;
     }
 
-    bool operator!=(const row_iterator &rhs) { return start_ != rhs.start_; }
+    bool operator!=(const row_iterator &rhs) { 
+      return start_ != rhs.start_;  
+    }
   };
 
-  row_iterator begin() const { return row_iterator(map, file_info.st_size, 0); }
+  row_iterator begin() const { 
+    if (file_info.st_size == 0) return end();
+    return row_iterator(map, file_info.st_size, 0); }
 
-  row_iterator end() const { return row_iterator(map, file_info.st_size, file_info.st_size); }
-
-  std::pair<size_t, size_t> shape() const {
-    size_t rows{0}, cells{0}, cols{0};
-    for (auto row : *this) {
-      rows += 1;
-      for (auto cell : row) {
-        cells += 1;
-      }
-    }
-    if (rows > 0)
-      cols = cells / rows;
-    return {rows, cols};
-  }
+  row_iterator end() const { return row_iterator(map, file_info.st_size, file_info.st_size + 1); }
 };
 } // namespace csv2
