@@ -27,7 +27,7 @@ int main() {
     // Iterate over rows
     for (auto row: csv) {
       for (auto cell: row) {
-        // Do something with the data
+        // Do something with the cell.value()
       }
     }
   }
