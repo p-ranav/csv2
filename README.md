@@ -9,7 +9,8 @@
   - `mmap` the CSV file
   - Parse without allocations
   - Provide iterators for rows and cells
-* Single-threaded and blazing fast
+* Blazing fast
+* Single-threaded - No additional worker threads
 * Single header file - Just include `<csv2/reader.hpp>`
 * MIT License.
 
