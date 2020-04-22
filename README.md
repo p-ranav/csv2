@@ -2,9 +2,6 @@
   <img height="75" src="img/logo.png" alt="csv2"/>
 </p>
 
-`csv2` is a fast, single-threaded CSV parser written in `C++17`.
-
-## Highlights
 * This is a very barebones CSV parser
   - `mmap` the CSV file
   - Parse without allocations
