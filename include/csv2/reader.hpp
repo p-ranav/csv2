@@ -15,39 +15,30 @@
 namespace csv2 {
 
 template <char delimiter, char quote_character> class Reader {
-  char *map;
-  struct stat file_info;
-  int fd;
+  char *map_;
+  struct stat file_info_;
+  int fd_;
 
 public:
-  Reader() : map(nullptr), fd(0) {}
+  Reader() : map_(nullptr), fd_(0) {}
   ~Reader() {
     // Free the mmapped memory
-    munmap(map, file_info.st_size);
+    munmap(map_, file_info_.st_size);
     // Un-mmaping doesn't close the file,
     // so we still need to do that.
-    close(fd);
+    close(fd_);
   }
 
   bool read(const std::string &filename) {
-    fd = open(filename.c_str(), O_RDONLY, (mode_t)0600);
+    fd_ = open(filename.c_str(), O_RDONLY, (mode_t)0600);
 
-    if (fd == -1) {
+    if ((fd_ == -1) || (fstat(fd_, &file_info_) == -1) || (file_info_.st_size == 0)) {
       return false;
     }
 
-    if (fstat(fd, &file_info) == -1) {
-      return false;
-    }
-
-    if (file_info.st_size == 0) {
-      // File is empty, nothing to do
-      return false;
-    }
-
-    map = (char *)mmap(0, file_info.st_size, PROT_READ, MAP_SHARED, fd, 0);
-    if (map == MAP_FAILED) {
-      close(fd);
+    map_ = (char *)mmap(0, file_info_.st_size, PROT_READ, MAP_SHARED, fd_, 0);
+    if (map_ == MAP_FAILED) {
+      close(fd_);
       return false;
     }
     return true;
@@ -204,9 +195,9 @@ public:
   };
 
   row_iterator begin() const { 
-    if (file_info.st_size == 0) return end();
-    return row_iterator(map, file_info.st_size, 0); }
+    if (file_info_.st_size == 0) return end();
+    return row_iterator(map_, file_info_.st_size, 0); }
 
-  row_iterator end() const { return row_iterator(map, file_info.st_size, file_info.st_size + 1); }
+  row_iterator end() const { return row_iterator(map_, file_info_.st_size, file_info_.st_size + 1); }
 };
 } // namespace csv2
