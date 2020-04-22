@@ -1,429 +1,212 @@
 #pragma once
-#include <algorithm>
-#include <cctype>
-#include <cmath>
-#include <cstddef>
-#include <cstring>
-#include <fstream>
-#include <functional>
-#include <locale>
-#include <string>
-#include <string_view>
-#include <tuple>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
+#include <chrono>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <vector>
+#include <utility>
+#include <string>
+#include <cstring>
 
 namespace csv2 {
 
-namespace details {
-
-template <bool condition> struct if_else;
-
-template <> struct if_else<true> { using type = std::true_type; };
-
-template <> struct if_else<false> { using type = std::false_type; };
-
-template <bool condition, typename True, typename False> struct if_else_type;
-
-template <typename True, typename False> struct if_else_type<true, True, False> {
-  using type = True;
-};
-
-template <typename True, typename False> struct if_else_type<false, True, False> {
-  using type = False;
-};
-
-template <typename... Ops> struct conjuction;
-
-template <> struct conjuction<> : std::true_type {};
-
-template <typename Op, typename... TailOps>
-struct conjuction<Op, TailOps...>
-    : if_else_type<!Op::value, std::false_type, conjuction<TailOps...>>::type {};
-
-template <typename... Ops> struct disjunction;
-
-template <> struct disjunction<> : std::false_type {};
-
-template <typename Op, typename... TailOps>
-struct disjunction<Op, TailOps...>
-    : if_else_type<Op::value, std::true_type, disjunction<TailOps...>>::type {};
-
-enum class CsvOption {
-  delimiter = 0,
-  column_names,
-  ignore_columns,
-  skip_empty_rows,
-  quote_character,
-  skip_initial_space
-};
-
-template <typename T, CsvOption Id> struct Setting {
-  template <typename... Args,
-            typename = typename std::enable_if<std::is_constructible<T, Args...>::value>::type>
-  explicit Setting(Args &&... args) : value(std::forward<Args>(args)...) {}
-  Setting(const Setting &) = default;
-  Setting(Setting &&) = default;
-
-  static constexpr auto id = Id;
-  using type = T;
-
-  T value{};
-};
-
-template <typename T> struct is_setting : std::false_type {};
-
-template <CsvOption Id, typename T> struct is_setting<Setting<T, Id>> : std::true_type {};
-
-template <typename... Args>
-struct are_settings : if_else<conjuction<is_setting<Args>...>::value>::type {};
-
-template <> struct are_settings<> : std::true_type {};
-
-template <typename Setting, typename Tuple> struct is_setting_from_tuple;
-
-template <typename Setting> struct is_setting_from_tuple<Setting, std::tuple<>> : std::true_type {};
-
-template <typename Setting, typename... TupleTypes>
-struct is_setting_from_tuple<Setting, std::tuple<TupleTypes...>>
-    : if_else<disjunction<std::is_same<Setting, TupleTypes>...>::value>::type {};
-
-template <typename Tuple, typename... Settings>
-struct are_settings_from_tuple
-    : if_else<conjuction<is_setting_from_tuple<Settings, Tuple>...>::value>::type {};
-
-template <CsvOption Id> struct always_true { static constexpr auto value = true; };
-
-template <CsvOption Id, typename Default> Default &&get_impl(Default &&def) {
-  return std::forward<Default>(def);
-}
-
-template <CsvOption Id, typename Default, typename T, typename... Args>
-auto get_impl(Default && /*def*/, T &&first, Args &&... /*tail*/) ->
-    typename std::enable_if<(std::decay<T>::type::id == Id),
-                            decltype(std::forward<T>(first))>::type {
-  return std::forward<T>(first);
-}
-
-template <CsvOption Id, typename Default, typename T, typename... Args>
-auto get_impl(Default &&def, T && /*first*/, Args &&... tail) ->
-    typename std::enable_if<(std::decay<T>::type::id != Id),
-                            decltype(get_impl<Id>(std::forward<Default>(def),
-                                                  std::forward<Args>(tail)...))>::type {
-  return get_impl<Id>(std::forward<Default>(def), std::forward<Args>(tail)...);
-}
-
-template <CsvOption Id, typename Default, typename... Args,
-          typename = typename std::enable_if<are_settings<Args...>::value, void>::type>
-auto get(Default &&def, Args &&... args)
-    -> decltype(details::get_impl<Id>(std::forward<Default>(def), std::forward<Args>(args)...)) {
-  return details::get_impl<Id>(std::forward<Default>(def), std::forward<Args>(args)...);
-}
-
-template <CsvOption Id> using CharSetting = Setting<char, Id>;
-
-template <CsvOption Id> using StringSetting = Setting<std::string, Id>;
-
-template <CsvOption Id> using IntegerSetting = Setting<std::size_t, Id>;
-
-template <CsvOption Id> using BooleanSetting = Setting<bool, Id>;
-
-template <CsvOption Id, typename Tuple, std::size_t counter = 0> struct option_idx;
-
-template <CsvOption Id, typename T, typename... Settings, std::size_t counter>
-struct option_idx<Id, std::tuple<T, Settings...>, counter>
-    : if_else_type<(Id == T::id), std::integral_constant<std::size_t, counter>,
-                   option_idx<Id, std::tuple<Settings...>, counter + 1>>::type {};
-
-template <CsvOption Id, std::size_t counter> struct option_idx<Id, std::tuple<>, counter> {
-  static_assert(always_true<(CsvOption)Id>::value, "No such option was found");
-};
-
-template <CsvOption Id, typename Settings>
-auto get_value(Settings &&settings)
-    -> decltype((std::get<option_idx<Id, typename std::decay<Settings>::type>::value>(
-        std::declval<Settings &&>()))) {
-  return std::get<option_idx<Id, typename std::decay<Settings>::type>::value>(
-      std::forward<Settings>(settings));
-}
-
-} // namespace details
-
-enum class Trim { none, leading, trailing, leading_and_trailing };
-
-namespace option {
-using Delimiter = details::CharSetting<details::CsvOption::delimiter>;
-using ColumnNames = details::Setting<std::vector<std::string>, details::CsvOption::column_names>;
-using IgnoreColumns =
-    details::Setting<std::vector<std::string>, details::CsvOption::ignore_columns>;
-using SkipEmptyRows = details::BooleanSetting<details::CsvOption::skip_empty_rows>;
-using QuoteCharacter = details::CharSetting<details::CsvOption::quote_character>;
-using SkipInitialSpace = details::BooleanSetting<details::CsvOption::skip_initial_space>;
-} // namespace option
-
-using Row = std::vector<std::string_view>;
-
-class Reader {
-  std::size_t lines_{0};
-  std::string header_string_;
-  std::vector<std::string> line_strings_;
-  std::vector<std::string> header_tokens_;
-  std::vector<std::string_view> row_tokens_;
-  std::string empty_{""};
-  std::string_view current_row_;
-  std::size_t current_row_index_{0};
-  char delimiter_;
-  char quote_character_;
-  bool skip_initial_space_{false};
-  std::vector<std::string> ignore_columns_;
-
-  using Settings =
-      std::tuple<option::Delimiter, option::ColumnNames, option::IgnoreColumns,
-                 option::SkipEmptyRows, option::QuoteCharacter, option::SkipInitialSpace>;
-  Settings settings_;
-
-  template <details::CsvOption id>
-  auto get_value() -> decltype((details::get_value<id>(std::declval<Settings &>()).value)) {
-    return details::get_value<id>(settings_).value;
-  }
-
-  template <details::CsvOption id>
-  auto get_value() const
-      -> decltype((details::get_value<id>(std::declval<const Settings &>()).value)) {
-    return details::get_value<id>(settings_).value;
-  }
-
-  template <typename LineHandler>
-  void read_file_fast_(std::ifstream &file, LineHandler &&line_handler) {
-    int64_t buffer_size = 40000;
-    file.seekg(0, std::ios::end);
-    std::ifstream::pos_type p = file.tellg();
-#ifdef WIN32
-    int64_t file_size = *(int64_t *)(((char *)&p) + 8);
-#else
-    int64_t file_size = p;
-#endif
-    file.seekg(0, std::ios::beg);
-    buffer_size = std::min(buffer_size, file_size);
-    char *buffer = new char[buffer_size];
-    auto buffer_length = buffer_size;
-    file.read(buffer, buffer_length);
-
-    int string_end = -1;
-    int string_start{0};
-    int64_t buffer_position_in_file = 0;
-    while (buffer_length > 0) {
-      int i = string_end + 1;
-      string_start = string_end;
-      string_end = -1;
-      for (; i < buffer_length && i + buffer_position_in_file < file_size; i++) {
-        if (buffer[i] == '\n') {
-          string_end = i;
-          break;
-        }
-      }
-
-      if (string_end == -1) { // scroll buffer
-        if (string_start == -1) {
-          line_handler(buffer + string_start + 1, buffer_length);
-          buffer_position_in_file += buffer_length;
-          buffer_length = std::min(buffer_length, file_size - buffer_position_in_file);
-          delete[] buffer;
-          buffer = new char[buffer_length];
-          file.read(buffer, buffer_length);
-        } else {
-          int moved_length = buffer_length - string_start - 1;
-          memmove(buffer, buffer + string_start + 1, moved_length);
-          buffer_position_in_file += string_start + 1;
-          int read_size = std::min(buffer_length - moved_length,
-                                   file_size - buffer_position_in_file - moved_length);
-
-          if (read_size != 0)
-            file.read(buffer + moved_length, read_size);
-          if (moved_length + read_size < buffer_length) {
-            char *temp_buffer = new char[moved_length + read_size];
-            memmove(temp_buffer, buffer, moved_length + read_size);
-            delete[] buffer;
-            buffer = temp_buffer;
-            buffer_length = moved_length + read_size;
-          }
-          string_end = -1;
-        }
-      } else {
-        line_handler(buffer + string_start + 1, string_end - string_start);
-      }
-    }
-    delete[] buffer;
-    line_handler(nullptr, 0); // eof
-  }
-
-  bool next_column_end_(size_t &end) {
-    if (end >= current_row_.size())
-      return false;
-    std::size_t last_quote_location = 0;
-    bool quote_opened = false;
-
-    while (end < current_row_.size() &&
-           (current_row_[end] != delimiter_ || (current_row_[end] == delimiter_ && quote_opened))) {
-      if (current_row_[end] == quote_character_) {
-        quote_opened = true;
-
-        if (end + 1 < current_row_.size() && current_row_[end + 1] == delimiter_) {
-          // end of field, quote is closed, moving on
-          end += 1;
-          return true;
-        }
-
-        // Check if previous character was also a quote
-        if (last_quote_location == end - 1) {
-          if (header_tokens_.empty()) { // this is the header row, mutate header_string_
-            header_string_.erase(end, 1);
-            current_row_ = header_string_;
-          } else { // this is not the header row, mutate line_strings_[index]
-            line_strings_[current_row_index_].erase(end, 1);
-            current_row_ = line_strings_[current_row_index_];
-          }
-          last_quote_location = end;
-          end -= 1;
-        } else
-          last_quote_location = end;
-      }
-      end += 1;
-    }
-    return true;
-  }
-
-  std::vector<std::string_view> tokenize_current_row_() {
-    std::size_t start = 0, end = start;
-    std::vector<std::string_view> result;
-    while (next_column_end_(end)) {
-      result.push_back(current_row_.substr(start, end - start));
-      // end is at the delimiter
-      if (skip_initial_space_ && (end + 1 < current_row_.size()) && current_row_[end + 1] == ' ')
-        end += 1;
-      start = end + 1;
-      end = start;
-    }
-    return result;
-  }
-
-  void read_file_(std::ifstream infile) {
-    const auto &skip_empty_rows = get_value<details::CsvOption::skip_empty_rows>();
-
-    read_file_fast_(infile, [&, this](char *buffer, int length) -> void {
-      if (!buffer)
-        return;
-      std::string line;
-      if (length > 0 && buffer[length - 1] == '\n') {
-        if (length > 1 && buffer[length - 2] == '\r') {
-          line = std::string{buffer, static_cast<size_t>(length - 2)};
-        } else {
-          line = std::string{buffer, static_cast<size_t>(length - 1)};
-        }
-      } else {
-        line = std::string{buffer, static_cast<size_t>(length)};
-      }
-
-      if (skip_empty_rows && line.empty())
-        return;
-      if (header_tokens_.empty()) {
-        header_string_ = std::move(line);
-        current_row_ = header_string_;
-        const auto &header_tokens = tokenize_current_row_();
-        header_tokens_ = std::vector<std::string>(header_tokens.begin(), header_tokens.end());
-        return;
-      }
-      lines_ += 1;
-      line_strings_.push_back(std::move(line));
-    });
-  }
+template <char delimiter, char quote_character> class Reader {
+  char *map;
+  struct stat file_info;
+  int fd;
 
 public:
-  template <typename... Args,
-            typename std::enable_if<details::are_settings_from_tuple<
-                                        Settings, typename std::decay<Args>::type...>::value,
-                                    void *>::type = nullptr>
-  Reader(Args &&... args)
-      : settings_(details::get<details::CsvOption::delimiter>(option::Delimiter{','},
-                                                              std::forward<Args>(args)...),
-                  details::get<details::CsvOption::column_names>(option::ColumnNames{},
-                                                                 std::forward<Args>(args)...),
-                  details::get<details::CsvOption::ignore_columns>(option::IgnoreColumns{},
-                                                                   std::forward<Args>(args)...),
-                  details::get<details::CsvOption::skip_empty_rows>(option::SkipEmptyRows{false},
-                                                                    std::forward<Args>(args)...),
-                  details::get<details::CsvOption::quote_character>(option::QuoteCharacter{'"'},
-                                                                    std::forward<Args>(args)...),
-                  details::get<details::CsvOption::skip_initial_space>(
-                      option::SkipInitialSpace{false}, std::forward<Args>(args)...)) {
-    header_tokens_ = get_value<details::CsvOption::column_names>();
-    delimiter_ = get_value<details::CsvOption::delimiter>();
-    ignore_columns_ = get_value<details::CsvOption::ignore_columns>();
-    quote_character_ = get_value<details::CsvOption::quote_character>();
-    skip_initial_space_ = get_value<details::CsvOption::skip_initial_space>();
+  Reader() : map(nullptr), fd(0) {}
+  ~Reader() {
+    // Free the mmapped memory
+    munmap(map, file_info.st_size);
+    // Un-mmaping doesn't close the file,
+    // so we still need to do that.
+    close(fd);
   }
 
-  template <typename StringType>
-  bool open(StringType&& filename) {
-    // Prepare to parse new file
-    lines_ = 0;
-    header_string_.clear();
-    line_strings_.clear();
-    header_tokens_ = get_value<details::CsvOption::column_names>();
-    current_row_index_ = 0;
+  bool read(const std::string &filename) {
+    fd = open(filename.c_str(), O_RDONLY, (mode_t)0600);
 
-    // Large I/O buffer to speed up ifstream read
-    const uint64_t stream_buffer_size = 1000000;
-    char stream_buffer[stream_buffer_size];
-
-    std::ios_base::sync_with_stdio(false);
-    std::ifstream infile;
-    infile.rdbuf()->pubsetbuf(stream_buffer, stream_buffer_size);
-    infile.open(std::forward<StringType>(filename));
-    if (!infile.is_open())
+    if (fd == -1) {
       return false;
-    read_file_(std::move(infile)); 
+    }
+
+    if (fstat(fd, &file_info) == -1) {
+      return false;
+    }
+
+    if (file_info.st_size == 0) {
+      // File is empty, nothing to do
+      return false;
+    }
+
+    map = (char *)mmap(0, file_info.st_size, PROT_READ, MAP_SHARED, fd, 0);
+    if (map == MAP_FAILED) {
+      close(fd);
+      return false;
+    }
     return true;
   }
 
-  bool read_row(Row& result) {
-    if (current_row_index_ >= line_strings_.size())
-      return false;
-    current_row_ = line_strings_[current_row_index_];
-    row_tokens_ = tokenize_current_row_();
-    result.clear();
-    for (size_t i = 0; i < header_tokens_.size(); ++i) {
-      if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(),
-                                                header_tokens_[i]) != ignore_columns_.end())
-        continue;
-      if (i < row_tokens_.size()) {
-        result.push_back(row_tokens_[i]);
-      } else {
-        result.push_back(empty_);
+  class row_iterator;
+  class row;
+  class cell_iterator;
+
+  class cell {
+    char *buffer_;
+    size_t start_;
+    size_t end_;
+    bool escaped_;
+    friend class row;
+    friend class cell_iterator;
+
+  public:
+    std::string value() {
+      std::string result;
+      if (start_ >= end_)
+        return "";
+      result.reserve(end_ - start_);
+      for (size_t i = start_; i < end_; ++i)
+        result.push_back(buffer_[i]);
+      for (size_t i = 1; i < result.size(); ++i) {
+        if (result[i] == quote_character && result[i - 1] == quote_character) {
+          result.erase(i - 1, 1);
+        }
       }
+      return result;
     }
-    current_row_index_ += 1;
-    return true;
-  }
+  };
 
-  std::size_t rows() const { return lines_; }
+  class row {
+    char *buffer_;
+    size_t start_;
+    size_t end_;
+    friend class row_iterator;
 
-  std::size_t cols() const {
-    return header_tokens_.size() - get_value<details::CsvOption::ignore_columns>().size();
-  }
+  public:
+    class cell_iterator {
+      friend class row;
+      char *buffer_;
+      size_t buffer_size_;
+      size_t start_;
+      size_t current_;
+      size_t end_;
 
-  std::vector<std::string_view> header() const {
-    std::vector<std::string_view> result;
-    for (auto &h : header_tokens_) {
-      if (!ignore_columns_.empty() && std::find(ignore_columns_.begin(), ignore_columns_.end(),
-                                      h) != ignore_columns_.end())
-        continue;
-      result.push_back(h);
+    public:
+      cell_iterator(char *buffer, size_t buffer_size, size_t start, size_t end)
+          : buffer_(buffer), buffer_size_(buffer_size), start_(start), current_(start_), end_(end) {
+      }
+
+      cell_iterator &operator++() {
+        current_ += 1;
+        return *this;
+      }
+
+      cell operator*() {
+        bool escaped{false};
+        class cell cell;
+        cell.buffer_ = buffer_;
+        cell.start_ = current_;
+        cell.end_ = end_;
+
+        size_t last_quote_location = 0;
+        bool quote_opened = false;
+        for (auto i = current_; i < end_; i++) {
+          if (buffer_[i] == delimiter && !quote_opened) {
+            // actual delimiter
+            // end of cell
+            current_ = i;
+            cell.end_ = current_;
+            cell.escaped_ = escaped;
+            return cell;
+          } else {
+            if (buffer_[i] == quote_character) {
+              if (!quote_opened) {
+                // first quote for this cell
+                quote_opened = true;
+                last_quote_location = i;
+              } else {
+                // quote previously opened for this cell
+                // check last quote location
+                if (last_quote_location == i - 1) {
+                  // previous character was quote too!
+                  escaped = true;
+                } else {
+                  last_quote_location = i;
+                  if (i + 1 < end_ && buffer_[i + 1] == delimiter) {
+                    quote_opened = false;
+                  }
+                }
+              }
+              current_ = i;
+            } else {
+              // Not delimiter or quote
+              current_ = i;
+            }
+          }
+        }
+        cell.end_ = current_ + 1;
+        return cell;
+      }
+
+      bool operator!=(const cell_iterator &rhs) { return current_ != rhs.current_; }
+    };
+
+    cell_iterator begin() { return cell_iterator(buffer_, end_ - start_, start_, end_); }
+
+    cell_iterator end() { return cell_iterator(buffer_, end_ - start_, end_, end_); }
+  };
+
+  class row_iterator {
+    friend class Reader;
+    char *buffer_;
+    size_t buffer_size_;
+    size_t start_;
+    size_t end_;
+
+  public:
+    row_iterator(char *buffer, size_t buffer_size, size_t start)
+        : buffer_(buffer), buffer_size_(buffer_size), start_(start), end_(start_) {}
+
+    row_iterator &operator++() {
+      start_ = end_ + 1;
+      end_ = start_;
+      return *this;
     }
-    return result;
-  }
+
+    row operator*() {
+      row result;
+      result.buffer_ = buffer_;
+      result.start_ = start_;
+      result.end_ = end_;
+
+      if (char *ptr = (char *)memchr(&buffer_[start_], '\n', (buffer_size_ - start_))) {
+        end_ = start_ + (ptr - &buffer_[start_]);
+        result.end_ = end_;
+        if (end_ + 1 < buffer_size_)
+          start_ = end_ + 1;
+      } else {
+        // last row
+        end_ = buffer_size_;
+        result.end_ = end_;
+      }
+      return result;
+    }
+
+    bool operator!=(const row_iterator &rhs) { 
+      return start_ != rhs.start_;  
+    }
+  };
+
+  row_iterator begin() const { 
+    if (file_info.st_size == 0) return end();
+    return row_iterator(map, file_info.st_size, 0); }
+
+  row_iterator end() const { return row_iterator(map, file_info.st_size, file_info.st_size + 1); }
 };
-
 } // namespace csv2
