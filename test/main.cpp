@@ -45,6 +45,22 @@ TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {
   REQUIRE(cols == 3);
 }
 
+TEST_CASE("Parse the most basic of CSV headers" * test_suite("Reader")) {
+  Reader<',', '"'> csv;
+  csv.read("inputs/test_01.csv");
+
+  std::vector<std::string> expected_cells{
+    "a", "b", "c"
+  };
+
+  size_t cells{0};
+  const auto header = csv.header();
+  for (const auto cell: header) {
+    REQUIRE(cell.value() == expected_cells[cells++]);
+  }
+  REQUIRE(cells == 3);
+}
+
 TEST_CASE("Parse the most basic of CSV buffers with ', ' delimiter using initial space" *
           test_suite("Reader")) {
   Reader<',', '"'> csv;

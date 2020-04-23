@@ -55,10 +55,10 @@ public:
   class CellIterator;
 
   class Cell {
-    char *buffer_; // Pointer to memory-mapped buffer
-    size_t start_; // Start index of cell content
-    size_t end_;   // End index of cell content
-    bool escaped_; // Does the cell have escaped content?
+    char *buffer_{nullptr}; // Pointer to memory-mapped buffer
+    size_t start_{0};       // Start index of cell content
+    size_t end_{0};         // End index of cell content
+    bool escaped_{false};   // Does the cell have escaped content?
     friend class Row;
     friend class CellIterator;
 
@@ -96,9 +96,9 @@ public:
   };
 
   class Row {
-    char *buffer_; // Pointer to memory-mapped buffer
-    size_t start_; // Start index of row content
-    size_t end_;   // End index of row content
+    char *buffer_{nullptr}; // Pointer to memory-mapped buffer
+    size_t start_{0};       // Start index of row content
+    size_t end_{0};         // End index of row content
     friend class RowIterator;
 
   public:
@@ -220,6 +220,14 @@ public:
     return RowIterator(map_, file_info_.st_size, 0);
   }
 
-  RowIterator end() const { return RowIterator(map_, file_info_.st_size, file_info_.st_size + 1); }
+  RowIterator end() const { return RowIterator(map_, file_info_.st_size, file_info_.st_size + 1);
+  }
+
+  Row header() const {      
+    for (const auto row: *this)
+      return row; // just return the first row
+    return Row();
+  }
+  
 };
 } // namespace csv2
