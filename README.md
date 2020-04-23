@@ -67,6 +67,43 @@ Operating System: macOS Catalina version 10.15.3
 | [SHA-1 password hash dump](https://www.kaggle.com/urvishramaiya/have-i-been-pwnd) | 11 GB | 2,62,974,241 | 2 | 21.453s |
 | [DOHUI NOH scaled_data](https://www.kaggle.com/seaa0612/scaled-data) | 16 GB | 496,782 | 3213 | 34.026s |
 
+## Data Structures
+
+Here is the public API available to you:
+
+```cpp
+template <char delimiter = ',', char quote_character = '"'>
+class Reader {
+public:
+  // Memory-maps the input CSV file
+  bool read(const std::string &filename);
+  
+  // Row class
+  class Row {
+  public:
+    // Get raw contents of the row
+    std::string raw_value() const;
+  };
+  
+  // Cell class
+  class Cell {
+  public:
+    // Get raw contents of the cell
+    std::string raw_value() const;
+    
+    // Get converted contents of the cell
+    // Handles escaped content, e.g., 
+    // """foo""" => ""foo""
+    std::string value() const;
+  };
+  
+  // Accessors
+  Row header() const;
+  size_t rows() const;
+  size_t cols() const;
+};
+```
+
 ## Compiling Tests
 
 ```bash
