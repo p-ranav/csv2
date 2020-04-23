@@ -6,13 +6,8 @@
 #include <csv2/reader.hpp>
 
 int main() {
-
-  // Configure CSV reader
   csv2::Reader<> reader;
-
-  // Memory-map CSV file
   if (reader.mmap("foo.csv")) {
-    // Iterate over rows
     for (const auto row: reader) {
       for (const auto cell: row) {
         // Do something with the cell.value()
