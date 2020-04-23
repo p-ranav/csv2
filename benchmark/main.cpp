@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Stats:\n";
     std::cout << "Rows: " << rows << "\n";
+    std::cout << "Computed rows: " << csv.rows() << "\n";
     std::cout << "Cells: " << cells << "\n";
     std::cout << "Execution Time: ";
     print_exec_time(start, stop);

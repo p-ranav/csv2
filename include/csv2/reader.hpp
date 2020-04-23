@@ -226,5 +226,14 @@ public:
       return row; // just return the first row
     return Row();
   }
+
+  size_t rows() const {
+    size_t result{0};
+    if (!map_ || file_info_.st_size == 0) return result;
+    for(char *p = map_; (p = (char*) memchr(p, '\n', (map_ + file_info_.st_size) - p)); ++p)
+      ++result;
+    return result;
+  }
+
 };
 } // namespace csv2
