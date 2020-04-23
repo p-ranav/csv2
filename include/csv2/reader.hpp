@@ -101,6 +101,17 @@ public:
     friend class RowIterator;
 
   public:
+    // Returns the raw_value of the row
+    std::string raw_value() const {
+      std::string result;
+      if (start_ >= end_)
+        return "";
+      result.reserve(end_ - start_);
+      for (size_t i = start_; i < end_; ++i)
+        result.push_back(buffer_[i]);
+      return result;
+    }
+
     class CellIterator {
       friend class Row;
       char *buffer_;
