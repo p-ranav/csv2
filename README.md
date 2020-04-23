@@ -10,7 +10,9 @@ int main() {
   if (reader.mmap("foo.csv")) {
     for (const auto row: reader) {
       for (const auto cell: row) {
-        // Do something with the cell.value()
+        // Do something with cell value
+        // std::string value;
+        // cell.read_value(value);
       }
     }
   }
@@ -77,8 +79,8 @@ public:
   class Row {
   public:
     // Get raw contents of the row
-    template <typename Container = std::string>
-    Container raw_value() const;
+    template <typename Container>
+    void read_raw_value(Container& value) const;
     
     // Cell iterator
     CellIterator begin() const;
@@ -89,14 +91,14 @@ public:
   class Cell {
   public:
     // Get raw contents of the cell
-    template <typename Container = std::string>
-    Container raw_value() const;
+    template <typename Container>
+    void read_raw_value(Container& value) const;
     
     // Get converted contents of the cell
     // Handles escaped content, e.g., 
     // """foo""" => ""foo""
-    template <typename Container = std::string>
-    Container value() const;
+    template <typename Container>
+    void read_value() const;
   };
   
   // Accessors

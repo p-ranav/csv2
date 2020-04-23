@@ -46,24 +46,21 @@ public:
     // Returns the raw_value of the cell without handling escaped
     // content, e.g., cell containing """foo""" will be returned
     // as is
-    template <typename Container = std::string>
-    Container raw_value() const {
-      Container result;
+    template <typename Container>
+    void read_raw_value(Container& result) const {
       if (start_ >= end_)
-        return result;
+        return;
       result.reserve(end_ - start_);
       for (size_t i = start_; i < end_; ++i)
         result.push_back(buffer_[i]);
-      return result;
     }
 
     // If cell is escaped, convert and return correct cell contents,
     // e.g., """foo""" => ""foo""
-    template <typename Container = std::string>
-    Container value() const {
-      Container result;
+    template <typename Container>
+    void read_value(Container& result) const {
       if (start_ >= end_)
-        return result;
+        return;
       result.reserve(end_ - start_);
       for (size_t i = start_; i < end_; ++i)
         result.push_back(buffer_[i]);
@@ -72,7 +69,6 @@ public:
           result.erase(i - 1, 1);
         }
       }
-      return result;
     }
   };
 
@@ -84,15 +80,13 @@ public:
 
   public:
     // Returns the raw_value of the row
-    template <typename Container = std::string>
-    Container raw_value() const {
-      Container result;
+    template <typename Container>
+    void read_raw_value(Container& result) const {
       if (start_ >= end_)
-        return result;
+        return;
       result.reserve(end_ - start_);
       for (size_t i = start_; i < end_; ++i)
         result.push_back(buffer_[i]);
-      return result;
     }
 
     class CellIterator {

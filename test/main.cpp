@@ -37,7 +37,9 @@ TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -54,7 +56,9 @@ TEST_CASE("Parse the most basic of CSV headers" * test_suite("Reader")) {
   size_t cells{0};
   const auto header = csv.header();
   for (const auto cell : header) {
-    REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
   }
   REQUIRE(cells == 3);
 }
@@ -70,7 +74,9 @@ TEST_CASE("Parse the most basic of CSV buffers with ', ' delimiter using initial
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -89,7 +95,9 @@ TEST_CASE("Parse headers with double quotes" * test_suite("Reader")) {
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -108,7 +116,9 @@ TEST_CASE("Parse headers with pairs of single-quotes" * test_suite("Reader")) {
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -127,7 +137,9 @@ TEST_CASE("Parse row with double quotes" * test_suite("Reader")) {
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -146,7 +158,9 @@ TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -164,7 +178,9 @@ TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -183,7 +199,9 @@ TEST_CASE("Parse the most basic of CSV buffers - Space delimiter" * test_suite("
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -202,7 +220,9 @@ TEST_CASE("Parse CSV with empty lines" * test_suite("Reader")) {
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   REQUIRE(rows == 9); // There are rows with empty cells
@@ -218,7 +238,9 @@ TEST_CASE("Parse CSV with missing columns" * test_suite("Reader")) {
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
@@ -237,7 +259,9 @@ TEST_CASE("Parse the most basic of CSV buffers from string" * test_suite("Reader
   for (auto row : csv) {
     rows += 1;
     for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
     }
   }
   size_t cols = cells / rows;
