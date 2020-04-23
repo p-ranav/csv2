@@ -24,19 +24,18 @@ int main(int argc, char **argv) {
     size_t rows{0}, cells{0};
     for (const auto row : csv) {
       rows += 1;
-      for (const auto cell: row) {
+      for (const auto cell : row) {
         cells += 1;
       }
     }
     auto stop = std::chrono::high_resolution_clock::now();
-    
+
     std::cout << "Stats:\n";
     std::cout << "Rows: " << rows << "\n";
     std::cout << "Cells: " << cells << "\n";
     std::cout << "Execution Time: ";
     print_exec_time(start, stop);
-  }
-  else {
+  } else {
     std::cout << "error: Failed to open " << argv[1] << std::endl;
   }
 }

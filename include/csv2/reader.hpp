@@ -14,7 +14,7 @@
 
 namespace csv2 {
 
-template <char delimiter=',', char quote_character='"'> class Reader {
+template <char delimiter = ',', char quote_character = '"'> class Reader {
   int fd_;                // file descriptor
   struct stat file_info_; // file info
   char *map_;             // memory-mapped buffer
@@ -63,7 +63,6 @@ public:
     friend class CellIterator;
 
   public:
-
     // Returns the raw_value of the cell without handling escaped
     // content, e.g., cell containing """foo""" will be returned
     // as is
@@ -76,7 +75,7 @@ public:
         result.push_back(buffer_[i]);
       return result;
     }
-    
+
     // If cell is escaped, convert and return correct cell contents,
     // e.g., """foo""" => ""foo""
     std::string value() const {
@@ -170,8 +169,8 @@ public:
       bool operator!=(const CellIterator &rhs) { return current_ != rhs.current_; }
     };
 
-    CellIterator begin() const { return CellIterator(buffer_, end_ - start_, start_, end_); }    
-    CellIterator end() const { return CellIterator(buffer_, end_ - start_, end_, end_); }    
+    CellIterator begin() const { return CellIterator(buffer_, end_ - start_, start_, end_); }
+    CellIterator end() const { return CellIterator(buffer_, end_ - start_, end_, end_); }
   };
 
   class RowIterator {
@@ -220,14 +219,12 @@ public:
     return RowIterator(map_, file_info_.st_size, 0);
   }
 
-  RowIterator end() const { return RowIterator(map_, file_info_.st_size, file_info_.st_size + 1);
-  }
+  RowIterator end() const { return RowIterator(map_, file_info_.st_size, file_info_.st_size + 1); }
 
-  Row header() const {      
-    for (const auto row: *this)
+  Row header() const {
+    for (const auto row : *this)
       return row; // just return the first row
     return Row();
   }
-  
 };
 } // namespace csv2
