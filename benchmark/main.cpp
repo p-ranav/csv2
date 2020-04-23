@@ -5,6 +5,11 @@ using namespace csv2;
 
 int main(int argc, char **argv) {
 
+  if (argc != 2) {
+    std::cout << "Usage: ./main <csv_file>\n";
+    return EXIT_FAILURE;
+  }
+
   using timepoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
   auto print_exec_time = [](timepoint start, timepoint stop) {
