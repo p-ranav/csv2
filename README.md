@@ -70,6 +70,10 @@ public:
   // Requires StringType.c_str() and StringType.size()
   template <typename StringType>
   bool parse(StringType&& contents);
+
+  // Shape
+  size_t rows() const;
+  size_t cols() const;
   
   // Row iterator
   RowIterator begin() const;
@@ -100,11 +104,9 @@ public:
     template <typename Container>
     void read_value() const;
   };
-  
+
   // Accessors
   Row header() const;
-  size_t rows() const;
-  size_t cols() const;
 };
 ```
 
