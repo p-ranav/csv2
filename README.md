@@ -9,7 +9,6 @@
   - Parse without allocations
   - Provide iterators for rows and cells
 * Single-threaded - No additional worker threads
-* Single header file - Just include `<csv2/reader.hpp>`
 * MIT License.
 
 ```cpp
