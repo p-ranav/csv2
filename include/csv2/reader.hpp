@@ -46,10 +46,11 @@ public:
     // Returns the raw_value of the cell without handling escaped
     // content, e.g., cell containing """foo""" will be returned
     // as is
-    std::string raw_value() const {
-      std::string result;
+    template <typename Container = std::string>
+    Container raw_value() const {
+      Container result;
       if (start_ >= end_)
-        return "";
+        return result;
       result.reserve(end_ - start_);
       for (size_t i = start_; i < end_; ++i)
         result.push_back(buffer_[i]);
@@ -58,10 +59,11 @@ public:
 
     // If cell is escaped, convert and return correct cell contents,
     // e.g., """foo""" => ""foo""
-    std::string value() const {
-      std::string result;
+    template <typename Container = std::string>
+    Container value() const {
+      Container result;
       if (start_ >= end_)
-        return "";
+        return result;
       result.reserve(end_ - start_);
       for (size_t i = start_; i < end_; ++i)
         result.push_back(buffer_[i]);
@@ -82,10 +84,11 @@ public:
 
   public:
     // Returns the raw_value of the row
-    std::string raw_value() const {
-      std::string result;
+    template <typename Container = std::string>
+    Container raw_value() const {
+      Container result;
       if (start_ >= end_)
-        return "";
+        return result;
       result.reserve(end_ - start_);
       for (size_t i = start_; i < end_; ++i)
         result.push_back(buffer_[i]);

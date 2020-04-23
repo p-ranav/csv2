@@ -77,7 +77,8 @@ public:
   class Row {
   public:
     // Get raw contents of the row
-    std::string raw_value() const;
+    template <typename Container = std::string>
+    Container raw_value() const;
     
     // Cell iterator
     CellIterator begin() const;
@@ -88,12 +89,14 @@ public:
   class Cell {
   public:
     // Get raw contents of the cell
-    std::string raw_value() const;
+    template <typename Container = std::string>
+    Container raw_value() const;
     
     // Get converted contents of the cell
     // Handles escaped content, e.g., 
     // """foo""" => ""foo""
-    std::string value() const;
+    template <typename Container = std::string>
+    Container value() const;
   };
   
   // Accessors
