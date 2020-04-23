@@ -67,7 +67,7 @@ Operating System: macOS Catalina version 10.15.3
 | [SHA-1 password hash dump](https://www.kaggle.com/urvishramaiya/have-i-been-pwnd) | 11 GB | 2,62,974,241 | 2 | 21.453s |
 | [DOHUI NOH scaled_data](https://www.kaggle.com/seaa0612/scaled-data) | 16 GB | 496,782 | 3213 | 34.026s |
 
-## Data Structures
+## API
 
 Here is the public API available to you:
 
