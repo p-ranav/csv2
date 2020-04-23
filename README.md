@@ -15,12 +15,11 @@
 
 ```cpp
 #include <csv2/reader.hpp>
-using namespace csv2;
 
 int main() {
 
   // Configure CSV reader
-  Reader<',', '"'> csv;
+  csv2::Reader<',', '"'> csv;
 
   // Open CSV file
   if (csv.open("foo.csv")) {
