@@ -39,7 +39,7 @@ This benchmarks measures how long it takes on average for `csv2` to memory-map t
 
 ```bash
 cd benchmark
-g++ -I../include -O3 -std=c++17 -o main main.cpp
+g++ -I../include -O3 -std=c++11 -o main main.cpp
 ./main <csv_file>
 ```
 
