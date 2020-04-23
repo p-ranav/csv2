@@ -2,12 +2,6 @@
   <img height="75" src="img/logo.png" alt="csv2"/>
 </p>
 
-## Highlights
-
-* Fast: Memory-maps the input CSV file and parses without allocations
-* Single-threaded - No additional worker threads
-* MIT License.
-
 ```cpp
 #include <csv2/reader.hpp>
 
