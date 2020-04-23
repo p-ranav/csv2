@@ -78,11 +78,19 @@ public:
   // Memory-maps the input CSV file
   bool read(const std::string &filename);
   
+  // Row iterator
+  RowIterator begin() const;
+  RowIterator end() const;
+  
   // Row class
   class Row {
   public:
     // Get raw contents of the row
     std::string raw_value() const;
+    
+    // Cell iterator
+    CellIterator begin() const;
+    CellIterator end() const;
   };
   
   // Cell class
