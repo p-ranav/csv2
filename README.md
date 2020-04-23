@@ -2,16 +2,6 @@
   <img height="75" src="img/logo.png" alt="csv2"/>
 </p>
 
-## Highlights
-
-* This is a fast, barebones CSV parser
-  - `mmap` the CSV file
-  - Parse without allocations
-  - Provide iterators for rows and cells
-* Single-threaded - No additional worker threads
-* Single header file - Just include `<csv2/reader.hpp>`
-* MIT License.
-
 ```cpp
 #include <csv2/reader.hpp>
 

@@ -5,24 +5,24 @@ using doctest::test_suite;
 
 TEST_CASE("Parse an empty CSV" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/empty.csv");
-
-  size_t rows{0}, cells{0}, cols{0};
-  std::vector<std::string> expected_cells{};
-  for (auto row : csv) {
-    rows += 1;
-    for (auto cell : row) {
-      REQUIRE(cell.value() == expected_cells[cells++]);
-    }
+  bool exception_thrown{false};
+  try {
+    csv.read("input/empty.csv");
+  } catch (std::exception& e) {
+    exception_thrown = true;
   }
-  REQUIRE(cells == 0);
-  REQUIRE(rows == 0);
-  REQUIRE(cols == 0);
+  REQUIRE(exception_thrown);
 }
 
 TEST_CASE("Parse file that doesn't exist" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  REQUIRE(!csv.read("inputs/missing.csv"));
+  bool exception_thrown{false};
+  try {
+    csv.read("input/missing.csv");
+  } catch (std::exception& e) {
+    exception_thrown = true;
+  }
+  REQUIRE(exception_thrown);
 }
 
 TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {

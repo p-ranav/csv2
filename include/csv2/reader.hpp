@@ -1,51 +1,23 @@
 #pragma once
-#include <chrono>
 #include <cstring>
-#include <fcntl.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <utility>
-#include <vector>
+#include <csv2/mio.hpp>
 
 namespace csv2 {
 
 template <char delimiter = ',', char quote_character = '"'> class Reader {
-  int fd_;                // file descriptor
-  struct stat file_info_; // file info
-  char *map_;             // memory-mapped buffer
-  bool file_opened_;      // if true, cleanup map in next .read() call
+  mio::mmap_source mmap_;   // mmap source
+  const char *map_;         // pointer to memory-mapped data
+  size_t file_size_;        // mapped length of buffer
+  bool file_opened_;        // if true, cleanup map in next .read() call
 
 public:
-  Reader() : fd_(-1), file_info_{}, map_(nullptr), file_opened_(false) {}
-  ~Reader() {
-    // Free the mmapped memory
-    munmap(map_, file_info_.st_size);
-    // Un-mmaping doesn't close the file,
-    // so we still need to do that.
-    close(fd_);
-  }
-
   bool read(const std::string &filename) {
-    if (file_opened_) {
-      munmap(map_, file_info_.st_size);
-      close(fd_);
-    }
-    fd_ = open(filename.c_str(), O_RDONLY, static_cast<mode_t>(0600));
-
-    if ((fd_ == -1) || (fstat(fd_, &file_info_) == -1) || (file_info_.st_size == 0)) {
+    mmap_ = mio::mmap_source(filename);
+    if (!mmap_.is_open() || !mmap_.is_mapped())
       return false;
-    }
-
-    map_ = static_cast<char *>(mmap(nullptr, file_info_.st_size, PROT_READ, MAP_SHARED, fd_, 0));
-    if (map_ == MAP_FAILED) {
-      close(fd_);
-      return false;
-    }
+    map_ = mmap_.data();
+    file_size_ = mmap_.mapped_length();
     file_opened_ = true;
     return true;
   }
@@ -55,10 +27,10 @@ public:
   class CellIterator;
 
   class Cell {
-    char *buffer_{nullptr}; // Pointer to memory-mapped buffer
-    size_t start_{0};       // Start index of cell content
-    size_t end_{0};         // End index of cell content
-    bool escaped_{false};   // Does the cell have escaped content?
+    const char *buffer_{nullptr};  // Pointer to memory-mapped buffer
+    size_t start_{0};              // Start index of cell content
+    size_t end_{0};                // End index of cell content
+    bool escaped_{false};          // Does the cell have escaped content?
     friend class Row;
     friend class CellIterator;
 
@@ -95,9 +67,9 @@ public:
   };
 
   class Row {
-    char *buffer_{nullptr}; // Pointer to memory-mapped buffer
-    size_t start_{0};       // Start index of row content
-    size_t end_{0};         // End index of row content
+    const char *buffer_{nullptr};  // Pointer to memory-mapped buffer
+    size_t start_{0};              // Start index of row content
+    size_t end_{0};                // End index of row content
     friend class RowIterator;
 
   public:
@@ -114,14 +86,14 @@ public:
 
     class CellIterator {
       friend class Row;
-      char *buffer_;
+      const char *buffer_;
       size_t buffer_size_;
       size_t start_;
       size_t current_;
       size_t end_;
 
     public:
-      CellIterator(char *buffer, size_t buffer_size, size_t start, size_t end)
+      CellIterator(const char *buffer, size_t buffer_size, size_t start, size_t end)
           : buffer_(buffer), buffer_size_(buffer_size), start_(start), current_(start_), end_(end) {
       }
 
@@ -186,13 +158,13 @@ public:
 
   class RowIterator {
     friend class Reader;
-    char *buffer_;
+    const char *buffer_;
     size_t buffer_size_;
     size_t start_;
     size_t end_;
 
   public:
-    RowIterator(char *buffer, size_t buffer_size, size_t start)
+    RowIterator(const char *buffer, size_t buffer_size, size_t start)
         : buffer_(buffer), buffer_size_(buffer_size), start_(start), end_(start_) {}
 
     RowIterator &operator++() {
@@ -207,8 +179,8 @@ public:
       result.start_ = start_;
       result.end_ = end_;
 
-      if (char *ptr =
-              static_cast<char *>(memchr(&buffer_[start_], '\n', (buffer_size_ - start_)))) {
+      if (const char *ptr =
+              static_cast<const char *>(memchr(&buffer_[start_], '\n', (buffer_size_ - start_)))) {
         end_ = start_ + (ptr - &buffer_[start_]);
         result.end_ = end_;
         if (end_ + 1 < buffer_size_)
@@ -225,12 +197,12 @@ public:
   };
 
   RowIterator begin() const {
-    if (file_info_.st_size == 0)
+    if (file_size_ == 0)
       return end();
-    return RowIterator(map_, file_info_.st_size, 0);
+    return RowIterator(map_, file_size_, 0);
   }
 
-  RowIterator end() const { return RowIterator(map_, file_info_.st_size, file_info_.st_size + 1); }
+  RowIterator end() const { return RowIterator(map_, file_size_, file_size_ + 1); }
 
   Row header() const {
     for (const auto row : *this)
@@ -240,8 +212,8 @@ public:
 
   size_t rows() const {
     size_t result{0};
-    if (!map_ || file_info_.st_size == 0) return result;
-    for(char *p = map_; (p = (char*) memchr(p, '\n', (map_ + file_info_.st_size) - p)); ++p)
+    if (!map_ || file_size_ == 0) return result;
+    for(char *p = map_; (p = (char*) memchr(p, '\n', (map_ + file_size_) - p)); ++p)
       ++result;
     return result;
   }
