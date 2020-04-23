@@ -3,8 +3,6 @@
 using namespace csv2;
 using doctest::test_suite;
 
-using Header = std::vector<std::string_view>;
-
 TEST_CASE("Parse an empty CSV" * test_suite("Reader")) {
   Reader<',', '"'> csv;
   csv.read("inputs/empty.csv");
