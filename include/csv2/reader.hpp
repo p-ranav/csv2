@@ -67,7 +67,7 @@ public:
     // Returns the raw_value of the cell without handling escaped
     // content, e.g., cell containing """foo""" will be returned
     // as is
-    std::string raw_value() {
+    std::string raw_value() const {
       std::string result;
       if (start_ >= end_)
         return "";
@@ -79,7 +79,7 @@ public:
     
     // If cell is escaped, convert and return correct cell contents,
     // e.g., """foo""" => ""foo""
-    std::string value() {
+    std::string value() const {
       std::string result;
       if (start_ >= end_)
         return "";
