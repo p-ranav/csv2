@@ -4,11 +4,10 @@
 
 ## Highlights
 
-* This is a very barebones CSV parser
+* This is a fast, barebones CSV parser
   - `mmap` the CSV file
   - Parse without allocations
   - Provide iterators for rows and cells
-* Blazing fast
 * Single-threaded - No additional worker threads
 * Single header file - Just include `<csv2/reader.hpp>`
 * MIT License.
