@@ -21,7 +21,7 @@ int main() {
   csv2::Reader<> csv;
 
   // Open CSV file
-  if (csv.open("foo.csv")) {
+  if (csv.read("foo.csv")) {
     // Iterate over rows
     for (const auto row: csv) {
       for (const auto cell: row) {
