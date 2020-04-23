@@ -14,7 +14,7 @@
 
 namespace csv2 {
 
-template <char delimiter, char quote_character> class Reader {
+template <char delimiter=',', char quote_character='"'> class Reader {
   int fd_;                // file descriptor
   struct stat file_info_; // file info
   char *map_;             // memory-mapped buffer

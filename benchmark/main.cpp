@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   // Measurement 1: Loading file
   auto start = std::chrono::high_resolution_clock::now();
 
-  Reader<',','"'> csv;
+  Reader<> csv;
   if (csv.read(argv[1])) {
     size_t rows{0}, cells{0};
     for (auto row : csv) {

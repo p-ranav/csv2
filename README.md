@@ -19,7 +19,7 @@
 int main() {
 
   // Configure CSV reader
-  csv2::Reader<',', '"'> csv;
+  csv2::Reader<> csv;
 
   // Open CSV file
   if (csv.open("foo.csv")) {
