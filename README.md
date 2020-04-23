@@ -4,10 +4,7 @@
 
 ## Highlights
 
-* This is a fast, barebones CSV parser
-  - `mmap` the CSV file
-  - Parse without allocations
-  - Provide iterators for rows and cells
+* Fast: Memory-maps the input CSV file and parses without allocations
 * Single-threaded - No additional worker threads
 * MIT License.
 
