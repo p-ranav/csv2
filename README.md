@@ -41,7 +41,7 @@ Memory: 32 GB 2400 MHz DDR4
 Operating System: macOS Catalina version 10.15.3
 ```
 
-### Results (as of 21 APR 2020)
+### Results (as of 23 APR 2020)
 
 | Dataset | File Size | Rows | Cols | Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|
