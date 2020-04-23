@@ -20,7 +20,7 @@ int main() {
   // Configure CSV reader
   csv2::Reader<> csv;
 
-  // Open CSV file
+  // Memory-map CSV file
   if (csv.read("foo.csv")) {
     // Iterate over rows
     for (const auto row: csv) {
