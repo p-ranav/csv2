@@ -156,8 +156,8 @@ public:
       bool operator!=(const CellIterator &rhs) { return current_ != rhs.current_; }
     };
 
-    CellIterator begin() { return CellIterator(buffer_, end_ - start_, start_, end_); }
-    CellIterator end() { return CellIterator(buffer_, end_ - start_, end_, end_); }
+    CellIterator begin() const { return CellIterator(buffer_, end_ - start_, start_, end_); }    
+    CellIterator end() const { return CellIterator(buffer_, end_ - start_, end_, end_); }    
   };
 
   class RowIterator {

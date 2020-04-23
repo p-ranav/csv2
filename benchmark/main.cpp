@@ -22,9 +22,9 @@ int main(int argc, char **argv) {
   Reader<> csv;
   if (csv.read(argv[1])) {
     size_t rows{0}, cells{0};
-    for (auto row : csv) {
+    for (const auto row : csv) {
       rows += 1;
-      for (auto cell: row) {
+      for (const auto cell: row) {
         cells += 1;
       }
     }

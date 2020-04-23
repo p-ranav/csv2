@@ -24,8 +24,8 @@ int main() {
   // Open CSV file
   if (csv.open("foo.csv")) {
     // Iterate over rows
-    for (auto row: csv) {
-      for (auto cell: row) {
+    for (const auto row: csv) {
+      for (const auto cell: row) {
         // Do something with the cell.value()
       }
     }
