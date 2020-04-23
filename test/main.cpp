@@ -1,5 +1,7 @@
 #include "doctest.hpp"
 #include <csv2/reader.hpp>
+#include <vector>
+#include <string>
 using namespace csv2;
 using doctest::test_suite;
 
@@ -222,4 +224,23 @@ TEST_CASE("Parse CSV with missing columns" * test_suite("Reader")) {
   size_t cols = cells / rows;
   REQUIRE(rows == 3);
   REQUIRE(cols == 4);
+}
+
+TEST_CASE("Parse the most basic of CSV buffers from string" * test_suite("Reader")) {
+  Reader<',', '"'> csv;
+  const std::string buffer = "a,b,c\n1,2,3\n4,5,6";
+  csv.parse(buffer);
+
+  std::vector<std::string> expected_cells{"a", "b", "c", "1", "2", "3", "4", "5", "6"};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      REQUIRE(cell.value() == expected_cells[cells++]);
+    }
+  }
+  size_t cols = cells / rows;
+  REQUIRE(rows == 3);
+  REQUIRE(cols == 3);
 }

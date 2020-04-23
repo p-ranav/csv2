@@ -7,19 +7,27 @@ namespace csv2 {
 
 template <char delimiter = ',', char quote_character = '"'> class Reader {
   mio::mmap_source mmap_;   // mmap source
-  const char *map_;         // pointer to memory-mapped data
-  size_t file_size_;        // mapped length of buffer
-  bool file_opened_;        // if true, cleanup map in next .read() call
+  const char *buffer_;      // pointer to memory-mapped data
+  size_t buffer_size_;      // mapped length of buffer
 
 public:
+  // Use this if you'd like to mmap the CSV file
   bool mmap(const std::string &filename) {
     mmap_ = mio::mmap_source(filename);
     if (!mmap_.is_open() || !mmap_.is_mapped())
       return false;
-    map_ = mmap_.data();
-    file_size_ = mmap_.mapped_length();
-    file_opened_ = true;
+    buffer_ = mmap_.data();
+    buffer_size_ = mmap_.mapped_length();
     return true;
+  }
+
+  // Use this if you have the CSV contents
+  // in an std::string already
+  template <typename StringType>
+  bool parse(StringType&& contents) {
+    buffer_ = std::forward<StringType>(contents).c_str();
+    buffer_size_ = contents.size();
+    return buffer_size_ > 0;
   }
 
   class RowIterator;
@@ -197,12 +205,12 @@ public:
   };
 
   RowIterator begin() const {
-    if (file_size_ == 0)
+    if (buffer_size_ == 0)
       return end();
-    return RowIterator(map_, file_size_, 0);
+    return RowIterator(buffer_, buffer_size_, 0);
   }
 
-  RowIterator end() const { return RowIterator(map_, file_size_, file_size_ + 1); }
+  RowIterator end() const { return RowIterator(buffer_, buffer_size_, buffer_size_ + 1); }
 
   Row header() const {
     for (const auto row : *this)
@@ -212,8 +220,8 @@ public:
 
   size_t rows() const {
     size_t result{0};
-    if (!map_ || file_size_ == 0) return result;
-    for(char *p = map_; (p = (char*) memchr(p, '\n', (map_ + file_size_) - p)); ++p)
+    if (!buffer_ || buffer_size_ == 0) return result;
+    for(char *p = buffer_; (p = (char*) memchr(p, '\n', (buffer_ + buffer_size_) - p)); ++p)
       ++result;
     return result;
   }

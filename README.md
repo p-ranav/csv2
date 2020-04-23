@@ -60,8 +60,14 @@ Here is the public API available to you:
 template <char delimiter = ',', char quote_character = '"'>
 class Reader {
 public:
-  // Memory-maps the input CSV file
+  
+  // Use this if you'd like to mmap the CSV file
   bool mmap(const std::string &filename);
+
+  // Use this if you have the CSV contents in std::string already
+  // Requires StringType.c_str() and StringType.size()
+  template <typename StringType>
+  bool parse(StringType&& contents);
   
   // Row iterator
   RowIterator begin() const;
