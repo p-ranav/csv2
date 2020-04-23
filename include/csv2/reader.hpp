@@ -1,39 +1,17 @@
 #pragma once
-#include <chrono>
 #include <cstring>
-#include <fcntl.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <utility>
-#include <vector>
 #include <csv2/mio.hpp>
-#include <iostream>
 
 namespace csv2 {
 
 template <char delimiter = ',', char quote_character = '"'> class Reader {
-  int fd_;                // file descriptor
-  size_t file_size_;
-  const char *map_;             // memory-mapped buffer
-  bool file_opened_;      // if true, cleanup map in next .read() call
-
-  mio::mmap_source mmap_;
+  mio::mmap_source mmap_;   // mmap source
+  const char *map_;         // pointer to memory-mapped data
+  size_t file_size_;        // mapped length of buffer
+  bool file_opened_;        // if true, cleanup map in next .read() call
 
 public:
-  Reader() {}
-  ~Reader() {
-    // // Free the mmapped memory
-    // munmap(map_, file_size_);
-    // // Un-mmaping doesn't close the file,
-    // // so we still need to do that.
-    // close(fd_);
-  }
-
   bool read(const std::string &filename) {
     mmap_ = mio::mmap_source(filename);
     if (!mmap_.is_open() || !mmap_.is_mapped())
@@ -49,10 +27,10 @@ public:
   class CellIterator;
 
   class Cell {
-    const char *buffer_{nullptr}; // Pointer to memory-mapped buffer
-    size_t start_{0};       // Start index of cell content
-    size_t end_{0};         // End index of cell content
-    bool escaped_{false};   // Does the cell have escaped content?
+    const char *buffer_{nullptr};  // Pointer to memory-mapped buffer
+    size_t start_{0};              // Start index of cell content
+    size_t end_{0};                // End index of cell content
+    bool escaped_{false};          // Does the cell have escaped content?
     friend class Row;
     friend class CellIterator;
 
@@ -89,9 +67,9 @@ public:
   };
 
   class Row {
-    const char *buffer_{nullptr}; // Pointer to memory-mapped buffer
-    size_t start_{0};       // Start index of row content
-    size_t end_{0};         // End index of row content
+    const char *buffer_{nullptr};  // Pointer to memory-mapped buffer
+    size_t start_{0};              // Start index of row content
+    size_t end_{0};                // End index of row content
     friend class RowIterator;
 
   public:
