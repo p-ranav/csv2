@@ -7,7 +7,7 @@ TEST_CASE("Parse an empty CSV" * test_suite("Reader")) {
   Reader<',', '"'> csv;
   bool exception_thrown{false};
   try {
-    csv.read("input/empty.csv");
+    csv.mmap("input/empty.csv");
   } catch (std::exception& e) {
     exception_thrown = true;
   }
@@ -18,7 +18,7 @@ TEST_CASE("Parse file that doesn't exist" * test_suite("Reader")) {
   Reader<',', '"'> csv;
   bool exception_thrown{false};
   try {
-    csv.read("input/missing.csv");
+    csv.mmap("input/missing.csv");
   } catch (std::exception& e) {
     exception_thrown = true;
   }
@@ -27,7 +27,7 @@ TEST_CASE("Parse file that doesn't exist" * test_suite("Reader")) {
 
 TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/test_01.csv");
+  csv.mmap("inputs/test_01.csv");
 
   std::vector<std::string> expected_cells{"a", "b", "c", "1", "2", "3", "4", "5", "6"};
 
@@ -45,7 +45,7 @@ TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {
 
 TEST_CASE("Parse the most basic of CSV headers" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/test_01.csv");
+  csv.mmap("inputs/test_01.csv");
 
   std::vector<std::string> expected_cells{"a", "b", "c"};
 
@@ -60,7 +60,7 @@ TEST_CASE("Parse the most basic of CSV headers" * test_suite("Reader")) {
 TEST_CASE("Parse the most basic of CSV buffers with ', ' delimiter using initial space" *
           test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/test_02.csv");
+  csv.mmap("inputs/test_02.csv");
 
   std::vector<std::string> expected_cells{"a", " b", " c", "1", " 2", " 3", "4", " 5", " 6"};
 
@@ -78,7 +78,7 @@ TEST_CASE("Parse the most basic of CSV buffers with ', ' delimiter using initial
 
 TEST_CASE("Parse headers with double quotes" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/test_06.csv");
+  csv.mmap("inputs/test_06.csv");
 
   std::vector<std::string> expected_cells{"\"Free trip to A,B\"", "\"5.89\"",
                                           "\"Special rate \"1.79\"\""};
@@ -97,7 +97,7 @@ TEST_CASE("Parse headers with double quotes" * test_suite("Reader")) {
 
 TEST_CASE("Parse headers with pairs of single-quotes" * test_suite("Reader")) {
   Reader<',', '\''> csv;
-  csv.read("inputs/test_07.csv");
+  csv.mmap("inputs/test_07.csv");
 
   std::vector<std::string> expected_cells{"''Free trip to A,B''", "''5.89''",
                                           "'Special rate 1.79'"};
@@ -116,7 +116,7 @@ TEST_CASE("Parse headers with pairs of single-quotes" * test_suite("Reader")) {
 
 TEST_CASE("Parse row with double quotes" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/test_05.csv");
+  csv.mmap("inputs/test_05.csv");
 
   std::vector<std::string> expected_cells{
       "a", "\"\"b\"\"", "\"c\"", "\"Free trip to A,B\"", "\"5.89\"", "\"Special rate \"1.79\"\""};
@@ -135,7 +135,7 @@ TEST_CASE("Parse row with double quotes" * test_suite("Reader")) {
 
 TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
   Reader<',', '\''> csv;
-  csv.read("inputs/test_04.csv");
+  csv.mmap("inputs/test_04.csv");
 
   std::vector<std::string> expected_cells{
       "a", "''b''", "'c'", "'Free trip to A,B'", "'5.89'", "'Special rate '1.79''"};
@@ -154,7 +154,7 @@ TEST_CASE("Parse row with single quotes" * test_suite("Reader")) {
 
 TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/test_03.csv");
+  csv.mmap("inputs/test_03.csv");
 
   std::vector<std::string> expected_cells{"\"a\"", "\"b\\nc\"", "\"d\"", "1", "2", "3"};
 
@@ -172,7 +172,7 @@ TEST_CASE("Parse line break inside double quotes" * test_suite("Reader")) {
 
 TEST_CASE("Parse the most basic of CSV buffers - Space delimiter" * test_suite("Reader")) {
   Reader<' ', '"'> csv;
-  csv.read("inputs/test_09.csv");
+  csv.mmap("inputs/test_09.csv");
 
   std::vector<std::string> expected_cells{"first_name", "last_name", "Eric",
                                           "Idle",       "John",      "Cleese"};
@@ -191,7 +191,7 @@ TEST_CASE("Parse the most basic of CSV buffers - Space delimiter" * test_suite("
 
 TEST_CASE("Parse CSV with empty lines" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/empty_lines.csv");
+  csv.mmap("inputs/empty_lines.csv");
 
   std::vector<std::string> expected_cells{"a", "b", "c", "1", "2",  "3",  "4", "5",
                                           "6", "7", "8", "9", "10", "11", "12"};
@@ -208,7 +208,7 @@ TEST_CASE("Parse CSV with empty lines" * test_suite("Reader")) {
 
 TEST_CASE("Parse CSV with missing columns" * test_suite("Reader")) {
   Reader<',', '"'> csv;
-  csv.read("inputs/missing_columns.csv");
+  csv.mmap("inputs/missing_columns.csv");
 
   std::vector<std::string> expected_cells{"a", "b", "c", "d", "1", "2", "", "4", "5", "6", "", "8"};
 

@@ -8,12 +8,12 @@
 int main() {
 
   // Configure CSV reader
-  csv2::Reader<> csv;
+  csv2::Reader<> reader;
 
   // Memory-map CSV file
-  if (csv.read("foo.csv")) {
+  if (reader.mmap("foo.csv")) {
     // Iterate over rows
-    for (const auto row: csv) {
+    for (const auto row: reader) {
       for (const auto cell: row) {
         // Do something with the cell.value()
       }
@@ -66,7 +66,7 @@ template <char delimiter = ',', char quote_character = '"'>
 class Reader {
 public:
   // Memory-maps the input CSV file
-  bool read(const std::string &filename);
+  bool mmap(const std::string &filename);
   
   // Row iterator
   RowIterator begin() const;

@@ -12,7 +12,7 @@ template <char delimiter = ',', char quote_character = '"'> class Reader {
   bool file_opened_;        // if true, cleanup map in next .read() call
 
 public:
-  bool read(const std::string &filename) {
+  bool mmap(const std::string &filename) {
     mmap_ = mio::mmap_source(filename);
     if (!mmap_.is_open() || !mmap_.is_mapped())
       return false;
