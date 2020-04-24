@@ -54,7 +54,7 @@ class Reader {
 
 public:
   // Use this if you'd like to mmap the CSV file
-  bool mmap(const std::string &filename) {
+  template <typename StringType> bool mmap(StringType &&filename) {
     mmap_ = mio::mmap_source(filename);
     if (!mmap_.is_open() || !mmap_.is_mapped())
       return false;
