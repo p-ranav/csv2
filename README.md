@@ -6,7 +6,10 @@
 #include <csv2/reader.hpp>
 
 int main() {
-  csv2::Reader<delimiter<','>, quote_character<'"'>, trim_policy::trim_whitespace> reader;
+  csv2::Reader<delimiter<','>, 
+               quote_character<'"'>, 
+               trim_policy::trim_whitespace> reader;
+               
   if (reader.mmap("foo.csv")) {
     for (const auto row: reader) {
       for (const auto cell: row) {
