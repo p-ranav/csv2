@@ -94,7 +94,6 @@ Here's the `Row` class:
 class Row {
 public:
   // Get raw contents of the row
-  template <typename Container>
   void read_raw_value(Container& value) const;
   
   // Cell iterator
@@ -110,14 +109,12 @@ and here's the `Cell` class:
 class Cell {
 public:
   // Get raw contents of the cell
-  template <typename Container>
   void read_raw_value(Container& value) const;
   
   // Get converted contents of the cell
   // Handles escaped content, e.g., 
   // """foo""" => ""foo""
-  template <typename Container>
-  void read_value() const;
+  void read_value(Container& value) const;
 };
 ```
 
