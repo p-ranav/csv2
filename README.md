@@ -67,7 +67,6 @@ public:
   bool mmap(const std::string &filename);
 
   // Use this if you have the CSV contents in std::string already
-  // Requires StringType.c_str() and StringType.size()
   template <typename StringType>
   bool parse(StringType&& contents);
 
