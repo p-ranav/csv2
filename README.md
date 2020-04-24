@@ -68,7 +68,7 @@ template <class delimiter = delimiter<','>,
 class Reader {
 public:
   
-  // Use this if you'd like to mmap the CSV file
+  // Use this if you'd like to mmap and read from file
   bool mmap(string_type filename);
 
   // Use this if you have the CSV contents in std::string already
