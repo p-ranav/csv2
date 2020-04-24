@@ -6,14 +6,6 @@
 
 namespace csv2 {
 
-template <char character> struct delimiter {
-  constexpr static char value() { return character; }
-};
-
-template <char character> struct quote_character {
-  constexpr static char value() { return character; }
-};
-
 namespace trim_policy {
 struct no_trimming {
 public:
@@ -44,6 +36,14 @@ public:
 
 using trim_whitespace = trim_characters<' ', '\t'>;
 } // namespace trim_policy
+
+template <char character> struct delimiter {
+  constexpr static char value = character;
+};
+
+template <char character> struct quote_character {
+  constexpr static char value = character;
+};
 
 template <class delimiter = delimiter<','>, class quote_character = quote_character<'"'>,
           class trim_policy = trim_policy::trim_whitespace>
@@ -105,7 +105,7 @@ public:
       for (size_t i = new_start_end.first; i < new_start_end.second; ++i)
         result.push_back(buffer_[i]);
       for (size_t i = 1; i < result.size(); ++i) {
-        if (result[i] == quote_character::value() && result[i - 1] == quote_character::value()) {
+        if (result[i] == quote_character::value && result[i - 1] == quote_character::value) {
           result.erase(i - 1, 1);
         }
       }
@@ -156,7 +156,7 @@ public:
         size_t last_quote_location = 0;
         bool quote_opened = false;
         for (auto i = current_; i < end_; i++) {
-          if (buffer_[i] == delimiter::value() && !quote_opened) {
+          if (buffer_[i] == delimiter::value && !quote_opened) {
             // actual delimiter
             // end of cell
             current_ = i;
@@ -164,7 +164,7 @@ public:
             cell.escaped_ = escaped;
             return cell;
           } else {
-            if (buffer_[i] == quote_character::value()) {
+            if (buffer_[i] == quote_character::value) {
               if (!quote_opened) {
                 // first quote for this cell
                 quote_opened = true;
@@ -177,7 +177,7 @@ public:
                   escaped = true;
                 } else {
                   last_quote_location = i;
-                  if (i + 1 < end_ && buffer_[i + 1] == delimiter::value()) {
+                  if (i + 1 < end_ && buffer_[i + 1] == delimiter::value) {
                     quote_opened = false;
                   }
                 }
