@@ -69,11 +69,10 @@ class Reader {
 public:
   
   // Use this if you'd like to mmap the CSV file
-  bool mmap(const std::string &filename);
+  bool mmap(string_type filename);
 
   // Use this if you have the CSV contents in std::string already
-  template <typename StringType>
-  bool parse(StringType&& contents);
+  bool parse(string_type contents);
 
   // Shape
   size_t rows() const;
