@@ -8,10 +8,12 @@
 int main() {
   csv2::Reader<delimiter<','>, 
                quote_character<'"'>, 
-               trim_policy::trim_whitespace> reader;
+               first_row_is_header<true>,
+               trim_policy::trim_whitespace> csv;
                
-  if (reader.mmap("foo.csv")) {
-    for (const auto row: reader) {
+  if (csv.mmap("foo.csv")) {
+    const auto header = csv.header();
+    for (const auto row: csv) {
       for (const auto cell: row) {
         // Do something with cell value
         // std::string value;
@@ -64,6 +66,7 @@ Here is the public API available to you:
 ```cpp
 template <class delimiter = delimiter<','>, 
           class quote_character = quote_character<'"'>,
+          class first_row_is_header = first_row_is_header<true>,
           class trim_policy = trim_policy::trim_whitespace>
 class Reader {
 public:
@@ -79,10 +82,12 @@ public:
   size_t cols() const;
   
   // Row iterator
+  // If first_row_is_header == true, row iteration will start
+  // from the second row
   RowIterator begin() const;
   RowIterator end() const;
 
-  // Accessors
+  // Access the first row of the CSV
   Row header() const;
 };
 ```

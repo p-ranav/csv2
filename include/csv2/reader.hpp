@@ -3,6 +3,7 @@
 #include <csv2/mio.hpp>
 #include <istream>
 #include <string>
+#include <utility>
 
 namespace csv2 {
 
@@ -45,12 +46,19 @@ template <char character> struct quote_character {
   constexpr static char value = character;
 };
 
+template <bool flag> struct first_row_is_header {
+  constexpr static bool value = flag;
+};
+
 template <class delimiter = delimiter<','>, class quote_character = quote_character<'"'>,
+          class first_row_is_header = first_row_is_header<true>,
           class trim_policy = trim_policy::trim_whitespace>
 class Reader {
-  mio::mmap_source mmap_; // mmap source
-  const char *buffer_;    // pointer to memory-mapped data
-  size_t buffer_size_;    // mapped length of buffer
+  mio::mmap_source mmap_;          // mmap source
+  const char *buffer_{nullptr};    // pointer to memory-mapped data
+  size_t buffer_size_{0};          // mapped length of buffer
+  size_t header_start_{0};         // start index of header (cache)
+  size_t header_end_{0};           // end index of header (cache)
 
 public:
   // Use this if you'd like to mmap the CSV file
@@ -117,6 +125,7 @@ public:
     size_t start_{0};             // Start index of row content
     size_t end_{0};               // End index of row content
     friend class RowIterator;
+    friend class Reader;
 
   public:
     // Returns the raw_value of the row
@@ -243,15 +252,42 @@ public:
   RowIterator begin() const {
     if (buffer_size_ == 0)
       return end();
-    return RowIterator(buffer_, buffer_size_, 0);
+    if (first_row_is_header::value) {
+      const auto header_indices = header_indices_();
+      return RowIterator(buffer_, buffer_size_, header_indices.second  > 0 ? header_indices.second + 1 : 0);
+    } else {
+      return RowIterator(buffer_, buffer_size_, 0);
+    }
   }
 
   RowIterator end() const { return RowIterator(buffer_, buffer_size_, buffer_size_ + 1); }
 
+private:
+  std::pair<size_t, size_t> header_indices_() const {
+    size_t start = 0, end = 0;
+
+    if (const char *ptr =
+            static_cast<const char *>(memchr(&buffer_[start], '\n', (buffer_size_ - start)))) {
+      end = start + (ptr - &buffer_[start]);
+    }
+    return {start, end};
+  }
+
+public:
+
   Row header() const {
-    for (const auto row : *this)
-      return row; // just return the first row
-    return Row();
+    size_t start = 0, end = 0;
+    Row result;
+    result.buffer_ = buffer_;
+    result.start_ = start;
+    result.end_ = end;
+
+    if (const char *ptr =
+            static_cast<const char *>(memchr(&buffer_[start], '\n', (buffer_size_ - start)))) {
+      end = start + (ptr - &buffer_[start]);
+      result.end_ = end;
+    }
+    return result;
   }
 
   size_t rows() const {

@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   // Measurement 1: Loading file
   auto start = std::chrono::high_resolution_clock::now();
 
-  Reader<> csv;
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
   if (csv.mmap(argv[1])) {
     size_t rows{0}, cells{0};
     for (const auto row : csv) {
