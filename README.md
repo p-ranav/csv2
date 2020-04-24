@@ -78,35 +78,43 @@ public:
   // Row iterator
   RowIterator begin() const;
   RowIterator end() const;
-  
-  // Row class
-  class Row {
-  public:
-    // Get raw contents of the row
-    template <typename Container>
-    void read_raw_value(Container& value) const;
-    
-    // Cell iterator
-    CellIterator begin() const;
-    CellIterator end() const;
-  };
-  
-  // Cell class
-  class Cell {
-  public:
-    // Get raw contents of the cell
-    template <typename Container>
-    void read_raw_value(Container& value) const;
-    
-    // Get converted contents of the cell
-    // Handles escaped content, e.g., 
-    // """foo""" => ""foo""
-    template <typename Container>
-    void read_value() const;
-  };
 
   // Accessors
   Row header() const;
+};
+```
+
+Here's the `Row` class:
+
+```cpp
+// Row class
+class Row {
+public:
+  // Get raw contents of the row
+  template <typename Container>
+  void read_raw_value(Container& value) const;
+  
+  // Cell iterator
+  CellIterator begin() const;
+  CellIterator end() const;
+};
+```
+
+and here's the `Cell` class:
+
+```cpp
+// Cell class
+class Cell {
+public:
+  // Get raw contents of the cell
+  template <typename Container>
+  void read_raw_value(Container& value) const;
+  
+  // Get converted contents of the cell
+  // Handles escaped content, e.g., 
+  // """foo""" => ""foo""
+  template <typename Container>
+  void read_value() const;
 };
 ```
 
