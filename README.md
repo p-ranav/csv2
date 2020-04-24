@@ -82,7 +82,7 @@ public:
   size_t cols() const;
   
   // Row iterator
-  // If first_row_is_header == true, row iteration will start
+  // If first_row_is_header, row iteration will start
   // from the second row
   RowIterator begin() const;
   RowIterator end() const;
