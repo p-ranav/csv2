@@ -179,16 +179,11 @@ public:
                 quote_opened = true;
                 last_quote_location = i;
               } else {
-                // quote previously opened for this cell
-                // check last quote location
-                if (last_quote_location == i - 1) {
-                  // previous character was quote too!
-                  escaped = true;
-                } else {
+                // If quote previously opened for this cell, set escaped to true
+                if (!(escaped = (last_quote_location == i - 1))) {
+                  // Not escaped, update last_quote_location
                   last_quote_location = i;
-                  if (i + 1 < end_ && buffer_[i + 1] == delimiter::value) {
-                    quote_opened = false;
-                  }
+                  quote_opened = buffer_[i + 1] != delimiter::value;
                 }
               }
               current_ = i;
