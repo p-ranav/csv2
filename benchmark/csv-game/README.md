@@ -23,6 +23,17 @@ There are two tests.
 
 `csv_count`: Take the sum of one of the columns in the file. This exercises the CSV parsing library, string to integer parsing, and basic maths. I saw textql which slurps data into sqlite and runs queries on the resulting database. I thought it's a cool idea, but could it possibly be performant? This test would probably be better named as csv-summer
 
+## Performance Benchmark
+
+### Hardware 
+
+```
+MacBook Pro (15-inch, 2019)
+Processor: 2.4 GHz 8-Core Intel Core i9
+Memory: 32 GB 2400 MHz DDR4
+Operating System: macOS Catalina version 10.15.3
+```
+
 | Test | Time |
 | --- | --- |
 | fieldcount | 47.2 ms ± 1.0 ms |
