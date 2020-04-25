@@ -36,5 +36,5 @@ Operating System: macOS Catalina version 10.15.3
 
 | Test | Time |
 | --- | --- |
-| fieldcount | 47.2 ms ± 1.0 ms |
-| csv_count | 98.7 ms ± 1.9 ms |
+| fieldcount | 36.2 ms ± 3.1 ms |
+| csv_count | 92.5 ms ± 1.8 ms |

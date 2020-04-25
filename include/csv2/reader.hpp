@@ -165,10 +165,10 @@ public:
         size_t last_quote_location = 0;
         bool quote_opened = false;
         for (auto i = current_; i < end_; i++) {
+          current_ = i;
           if (buffer_[i] == delimiter::value && !quote_opened) {
             // actual delimiter
             // end of cell
-            current_ = i;
             cell.end_ = current_;
             cell.escaped_ = escaped;
             return cell;
@@ -179,22 +179,10 @@ public:
                 quote_opened = true;
                 last_quote_location = i;
               } else {
-                // quote previously opened for this cell
-                // check last quote location
-                if (last_quote_location == i - 1) {
-                  // previous character was quote too!
-                  escaped = true;
-                } else {
-                  last_quote_location = i;
-                  if (i + 1 < end_ && buffer_[i + 1] == delimiter::value) {
-                    quote_opened = false;
-                  }
-                }
+                escaped = (last_quote_location == i - 1);
+                last_quote_location += (i - last_quote_location) * size_t(!escaped);
+                quote_opened = escaped || (buffer_[i + 1] != delimiter::value);
               }
-              current_ = i;
-            } else {
-              // Not delimiter or quote
-              current_ = i;
             }
           }
         }
@@ -236,8 +224,7 @@ public:
               static_cast<const char *>(memchr(&buffer_[start_], '\n', (buffer_size_ - start_)))) {
         end_ = start_ + (ptr - &buffer_[start_]);
         result.end_ = end_;
-        if (end_ + 1 < buffer_size_)
-          start_ = end_ + 1;
+        start_ = end_ + 1;
       } else {
         // last row
         end_ = buffer_size_;

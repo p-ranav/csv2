@@ -18,14 +18,11 @@ int main(int argc, char **argv) {
     for (const auto row : csv) {
       size_t col{0};
       for (const auto cell : row) {
-        cell_value.clear();
-        cell.read_raw_value(cell_value);
-        std::cout << "Cell value: " << cell_value << "\n";
         col += 1;
         if (col == column_index) {
-          // cell.read_raw_value(cell_value);
+          cell.read_raw_value(cell_value);
           sum += std::stoi(cell_value);
-          // cell_value.clear();
+          cell_value.clear();
         }
       }
     }
