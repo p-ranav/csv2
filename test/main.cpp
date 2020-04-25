@@ -363,3 +363,25 @@ TEST_CASE("Parse the most basic of CSV buffers with double quotes with embedded 
   REQUIRE(rows == 2);
   REQUIRE(cols == 3);
 }
+
+TEST_CASE("Parse the most basic of CSV buffers with double quotes with just delimiters" *
+          test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  const std::string buffer = "hello,\",\",\" \",world,1,\"!\"";
+  csv.parse(buffer);
+
+  const std::vector<std::string> expected_cells{"hello", "\",\"", "\" \"", "world", "1", "\"!\""};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  size_t cols = cells / rows;
+  REQUIRE(rows == 1);
+  REQUIRE(cols == 6);
+}
