@@ -341,3 +341,25 @@ TEST_CASE("Parse the most basic of CSV buffers with whitespace trimming enabled"
   REQUIRE(rows == 3);
   REQUIRE(cols == 3);
 }
+
+TEST_CASE("Parse the most basic of CSV buffers with double quotes with embedded delimiters" *
+          test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  const std::string buffer = "a,\"b,c\",d\n\"1,2,3\",\"4,5,6\", \"7,8,9\"";
+  csv.parse(buffer);
+
+  const std::vector<std::string> expected_cells{"a", "\"b,c\"", "d", "\"1,2,3\"", "\"4,5,6\"", "\"7,8,9\""};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  size_t cols = cells / rows;
+  REQUIRE(rows == 2);
+  REQUIRE(cols == 3);
+}
