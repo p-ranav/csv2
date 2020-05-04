@@ -281,7 +281,8 @@ public:
     size_t result{0};
     if (!buffer_ || buffer_size_ == 0)
       return result;
-    for (char *p = buffer_; (p = (char *)memchr(p, '\n', (buffer_ + buffer_size_) - p)); ++p)
+    for (const char *p = buffer_;
+         (p = static_cast<const char *>(memchr(p, '\n', (buffer_ + buffer_size_) - p))); ++p)
       ++result;
     return result;
   }
