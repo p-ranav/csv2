@@ -2,6 +2,20 @@
   <img height="75" src="img/logo.png" alt="csv2"/>
 </p>
 
+## Table of Contents
+
+*    [CSV Reader](#csv-reader)
+     *    [Performance Benchmark](#performance-benchmark)
+     *    [Reader API](#reader-api)
+*    [CSV Writer](#csv-writer)
+     *    [Writer API](#writer-api)
+*    [Compiling Tests](#compiling-tests)
+*    [Generating Single Header](#generating-single-header)
+*    [Contributing](#contributing)
+*    [License](#license)
+
+## CSV Reader
+
 ```cpp
 #include <csv2/reader.hpp>
 
@@ -24,7 +38,7 @@ int main() {
 }
 ```
 
-## Performance Benchmark
+### Performance Benchmark
 
 This benchmark measures the average execution time (of 5 runs after 3 warmup runs) for `csv2` to memory-map the input CSV file and iterate over every cell in the CSV. See `benchmark/main.cpp` for more details.
 
@@ -34,7 +48,7 @@ g++ -I../include -O3 -std=c++11 -o main main.cpp
 ./main <csv_file>
 ```
 
-### Hardware 
+#### Hardware 
 
 ```
 MacBook Pro (15-inch, 2019)
@@ -43,7 +57,7 @@ Memory: 32 GB 2400 MHz DDR4
 Operating System: macOS Catalina version 10.15.3
 ```
 
-### Results (as of 23 APR 2020)
+#### Results (as of 23 APR 2020)
 
 | Dataset | File Size | Rows | Cols | Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|
@@ -59,7 +73,7 @@ Operating System: macOS Catalina version 10.15.3
 | [SHA-1 password hash dump](https://www.kaggle.com/urvishramaiya/have-i-been-pwnd) | 11 GB | 2,62,974,241 | 2 | 19.505s |
 | [DOHUI NOH scaled_data](https://www.kaggle.com/seaa0612/scaled-data) | 16 GB | 496,782 | 3213 | 32.780s |
 
-## API
+### Reader API
 
 Here is the public API available to you:
 
@@ -123,6 +137,51 @@ public:
 };
 ```
 
+## CSV Writer
+
+This library also provides a basic `csv2::Writer` class - one that can be used to write CSV rows to file. Here's a basic usage:
+
+```cpp
+#include <csv2/writer.hpp>
+#include <vector>
+#include <string>
+using namespace csv2;
+
+int main() {
+    std::ofstream stream("foo.csv");
+    Writer<delimiter<','>> writer(stream);
+
+    std::vector<std::vector<std::string>> rows = 
+        {
+            {"a", "b", "c"},
+            {"1", "2", "3"},
+            {"4", "5", "6"}
+        };
+
+    writer.write_rows(rows);
+    stream.close();
+}
+```
+
+### Writer API
+
+Here is the public API available to you:
+
+```cpp
+template <class delimiter = delimiter<','>>
+class Writer {
+public:
+  
+  // Construct using an std::ofstream
+  Writer(output_file_stream stream);
+
+  // Use this to write a single row to file
+  void write_row(container_of_strings row);
+
+  // Use this to write a list of rows to file
+  void write_rows(container_of_rows rows);
+```
+
 ## Compiling Tests
 
 ```bash
@@ -131,6 +190,12 @@ cmake -DCSV2_TEST=ON ..
 make
 cd test
 ./csv2_test
+```
+
+## Generating Single Header
+
+```bash
+python3 utils/amalgamate/amalgamate.py -c single_include.json -s .
 ```
 
 ## Contributing

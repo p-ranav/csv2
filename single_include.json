@@ -1,0 +1,11 @@
+{
+    "project": "CSV for Modern C++",
+    "target": "single_include/csv2/csv2.hpp",
+    "sources": [
+        "include/csv2/mio.hpp",
+        "include/csv2/parameters.hpp",
+        "include/csv2/reader.hpp",
+        "include/csv2/writer.hpp"
+    ],
+    "include_paths": ["include"]
+}
