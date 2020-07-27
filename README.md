@@ -2,6 +2,17 @@
   <img height="75" src="img/logo.png" alt="csv2"/>
 </p>
 
+## Table of Contents
+
+*    [CSV Reader](#csv-reader)
+     *    [Performance Benchmark](#performance-benchmark)
+     *    [Reader API](#reader-api)
+*    [CSV Writer](#csv-writer)
+     *    [Writer API](#writer-api)
+*    [Compiling Tests](#compiling-tests)
+*    [Contributing](#contributing)
+*    [License](#license)
+
 ## CSV Reader
 
 ```cpp
@@ -150,7 +161,7 @@ int main() {
 }
 ```
 
-### API
+### Writer API
 
 Here is the public API available to you:
 
