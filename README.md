@@ -10,6 +10,7 @@
 *    [CSV Writer](#csv-writer)
      *    [Writer API](#writer-api)
 *    [Compiling Tests](#compiling-tests)
+*    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
 *    [License](#license)
 
@@ -188,6 +189,12 @@ cmake -DCSV2_TEST=ON ..
 make
 cd test
 ./csv2_test
+```
+
+## Generating Single Header
+
+```bash
+python3 utils/amalgamate/amalgamate.py -c single_include.json -s .
 ```
 
 ## Contributing
