@@ -159,6 +159,7 @@ int main() {
         };
 
     writer.write_rows(rows);
+    stream.close();
 }
 ```
 

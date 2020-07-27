@@ -1,3 +1,4 @@
+
 /* Copyright 2017 https://github.com/mandreyel
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -1559,6 +1560,7 @@ using shared_ummap_sink = basic_shared_mmap_sink<unsigned char>;
 } // namespace mio
 
 #endif // MIO_SHARED_MMAP_HEADER
+
 #pragma once
 #include <utility>
 
@@ -1607,7 +1609,8 @@ template <bool flag> struct first_row_is_header {
   constexpr static bool value = flag;
 };
 
-}#pragma once
+}
+#pragma once
 #include <cstring>
 // #include <csv2/mio.hpp>
 // #include <csv2/parameters.hpp>
@@ -1860,7 +1863,8 @@ public:
     return result;
   }
 };
-} // namespace csv2#pragma once
+} // namespace csv2
+#pragma once
 #include <cstring>
 // #include <csv2/parameters.hpp>
 #include <fstream>
