@@ -50,6 +50,11 @@ public:
     friend class CellIterator;
 
   public:
+	// returns a view on the cell's contents
+      std::string_view read_view() const {
+          return std::string_view(buffer_ + start_, end_ - start_);
+      }
+
     // Returns the raw_value of the cell without handling escaped
     // content, e.g., cell containing """foo""" will be returned
     // as is
@@ -86,6 +91,9 @@ public:
     friend class Reader;
 
   public:
+	// returns the char length of the row
+	size_t length() const { return end_ - start_; }
+
     // Returns the raw_value of the row
     template <typename Container> void read_raw_value(Container &result) const {
       if (start_ >= end_)
