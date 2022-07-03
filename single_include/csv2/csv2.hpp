@@ -1616,6 +1616,9 @@ template <bool flag> struct first_row_is_header {
 // #include <csv2/parameters.hpp>
 #include <istream>
 #include <string>
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
+#include <string_view>
+#endif
 
 namespace csv2 {
 
@@ -1661,6 +1664,11 @@ public:
     friend class CellIterator;
 
   public:
+    // returns a view on the cell's contents if C++17 available
+    #if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
+        std::string_view read_view() const { return std::string_view(buffer_ + start_, end_ - start_); }
+    #endif
+
     // Returns the raw_value of the cell without handling escaped
     // content, e.g., cell containing """foo""" will be returned
     // as is
@@ -1697,6 +1705,9 @@ public:
     friend class Reader;
 
   public:
+    // returns the char length of the row
+    size_t length() const { return end_ - start_; }
+
     // Returns the raw_value of the row
     template <typename Container> void read_raw_value(Container &result) const {
       if (start_ >= end_)
