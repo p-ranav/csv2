@@ -3,6 +3,7 @@
 #include <cstring>
 #include <csv2/parameters.hpp>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <utility>
 #include <iostream>

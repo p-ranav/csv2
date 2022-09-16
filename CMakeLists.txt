@@ -26,7 +26,7 @@ target_include_directories(csv2 INTERFACE
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
 
-if(CSV2_TEST)
+if(CSV2_BUILD_TESTS)
   add_subdirectory(test)
 endif()
 
