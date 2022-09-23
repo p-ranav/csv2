@@ -58,7 +58,7 @@ g++ -I../include -O3 -std=c++11 -o main main.cpp
 | OS              | Ubuntu 20.04 LTS running on WSL in Windows 11                                                             |
 | C++ Compiler    | g++ (Ubuntu 10.3.0-1ubuntu1~20.04) 10.3.0                                                                 |
 
-#### Results (as of 23 APR 2020)
+#### Results (as of 23 SEP 2022)
 
 | Dataset | File Size | Rows | Cols | Time |
 |:---     |       ---:|  ---:|  ---:|  ---:|
