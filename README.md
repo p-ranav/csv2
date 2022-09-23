@@ -48,9 +48,7 @@ g++ -I../include -O3 -std=c++11 -o main main.cpp
 ./main <csv_file>
 ```
 
-#### Hardware 
-
-### System Details
+#### System Details
 
 | Type            | Value                                                                                                     |
 | --------------- | --------------------------------------------------------------------------------------------------------- |
