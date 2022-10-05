@@ -57,7 +57,8 @@ public:
 	// returns a view on the cell's contents if C++17 available
 	#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
       std::string_view read_view() const {
-          return std::string_view (buffer_ + start_, end_ - start_);
+      const auto new_start_end = trim_policy::trim(buffer_, start_, end_);
+      return std::string_view(buffer_ + new_start_end.first, new_start_end.second- new_start_end.first);
       }
 	#endif
     // Returns the raw_value of the cell without handling escaped
