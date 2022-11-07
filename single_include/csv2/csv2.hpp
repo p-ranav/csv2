@@ -1651,6 +1651,18 @@ public:
     return buffer_size_ > 0;
   }
 
+
+  // Use this if you have the CSV contents
+  // in an std::string_view already
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
+  bool parse_view(std::string_view sv) {
+    buffer_ = sv.data();
+    buffer_size_ = sv.size();
+    return buffer_size_ > 0;
+  }
+#endif
+
+
   class RowIterator;
   class Row;
   class CellIterator;
@@ -1664,11 +1676,14 @@ public:
     friend class CellIterator;
 
   public:
-    // returns a view on the cell's contents if C++17 available
-    #if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
-        std::string_view read_view() const { return std::string_view(buffer_ + start_, end_ - start_); }
-    #endif
-
+  
+	// returns a view on the cell's contents if C++17 available
+	#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
+      std::string_view read_view() const {
+      const auto new_start_end = trim_policy::trim(buffer_, start_, end_);
+      return std::string_view(buffer_ + new_start_end.first, new_start_end.second- new_start_end.first);
+      }
+	#endif
     // Returns the raw_value of the cell without handling escaped
     // content, e.g., cell containing """foo""" will be returned
     // as is
@@ -1705,8 +1720,10 @@ public:
     friend class Reader;
 
   public:
-    // returns the char length of the row
-    size_t length() const { return end_ - start_; }
+    // address of row
+    const char *address() const { return buffer_; }
+	// returns the char length of the row
+	size_t length() const { return end_ - start_; }
 
     // Returns the raw_value of the row
     template <typename Container> void read_raw_value(Container &result) const {
