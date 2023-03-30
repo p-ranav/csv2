@@ -10,8 +10,21 @@
 
 namespace csv2 {
 
-template<typename T>
-concept HasClose = requires(T t) { t.close(); };
+    template <typename, typename T> struct has_close : std::false_type {};
+
+    template <typename C, typename Ret, typename... Args> struct has_close<C, Ret(Args...)> {
+    private:
+        template <typename T>
+        static constexpr auto check(T *) ->
+            typename std::is_same<decltype(std::declval<T>().close(std::declval<Args>()...)), Ret>::type;
+
+        template <typename> static constexpr std::false_type check(...);
+
+        typedef decltype(check<C>(0)) type;
+
+    public:
+        static constexpr bool value = type::value;
+    };
 
 template <class delimiter = delimiter<','>, typename Stream=std::ofstream>
 class Writer {
@@ -20,7 +33,10 @@ public:
     Writer(Stream& stream) : stream_(stream) {}
 
     ~Writer() {
-        close();
+        if constexpr (has_close<Stream, void()>::value) {
+            // has `close`
+            stream_.close();
+        }
     }
 
     template <typename Container>
@@ -38,10 +54,6 @@ public:
         for (const auto& row : container_of_rows) {
             write_row(row);
         }
-    }
-
-    void close() {
-        if constexpr(HasClose<Stream>) stream_.close();
     }
 };
 
