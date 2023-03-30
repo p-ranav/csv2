@@ -10,15 +10,17 @@
 
 namespace csv2 {
 
-template <class delimiter = delimiter<','>>
+template<typename T>
+concept HasClose = requires(T t) { t.close(); };
+
+template <class delimiter = delimiter<','>, typename Stream=std::ofstream>
 class Writer {
-    std::ofstream& stream_;    // output stream for the writer
+    Stream& stream_;    // output stream for the writer
 public:
-    template <typename Stream>
-    Writer(Stream&& stream) : stream_(std::forward<Stream>(stream)) {}
+    Writer(Stream& stream) : stream_(stream) {}
 
     ~Writer() {
-        stream_.close();
+        close();
     }
 
     template <typename Container>
@@ -36,6 +38,10 @@ public:
         for (const auto& row : container_of_rows) {
             write_row(row);
         }
+    }
+
+    void close() {
+        if constexpr(HasClose<Stream>) stream_.close();
     }
 };
 
