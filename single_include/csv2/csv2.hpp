@@ -105,7 +105,7 @@ inline size_t make_offset_page_aligned(size_t offset) noexcept {
 #define WIN32_LEAN_AND_MEAN
 #endif // WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#else // ifdef _WIN32
+#else  // ifdef _WIN32
 #define INVALID_HANDLE_VALUE -1
 #endif // ifdef _WIN32
 
@@ -603,25 +603,43 @@ struct char_type_helper {
   using type = typename C::value_type;
 };
 
-template <class T> struct char_type { using type = typename char_type_helper<T>::type; };
+template <class T> struct char_type {
+  using type = typename char_type_helper<T>::type;
+};
 
 // TODO: can we avoid this brute force approach?
-template <> struct char_type<char *> { using type = char; };
+template <> struct char_type<char *> {
+  using type = char;
+};
 
-template <> struct char_type<const char *> { using type = char; };
+template <> struct char_type<const char *> {
+  using type = char;
+};
 
-template <size_t N> struct char_type<char[N]> { using type = char; };
+template <size_t N> struct char_type<char[N]> {
+  using type = char;
+};
 
-template <size_t N> struct char_type<const char[N]> { using type = char; };
+template <size_t N> struct char_type<const char[N]> {
+  using type = char;
+};
 
 #ifdef _WIN32
-template <> struct char_type<wchar_t *> { using type = wchar_t; };
+template <> struct char_type<wchar_t *> {
+  using type = wchar_t;
+};
 
-template <> struct char_type<const wchar_t *> { using type = wchar_t; };
+template <> struct char_type<const wchar_t *> {
+  using type = wchar_t;
+};
 
-template <size_t N> struct char_type<wchar_t[N]> { using type = wchar_t; };
+template <size_t N> struct char_type<wchar_t[N]> {
+  using type = wchar_t;
+};
 
-template <size_t N> struct char_type<const wchar_t[N]> { using type = wchar_t; };
+template <size_t N> struct char_type<const wchar_t[N]> {
+  using type = wchar_t;
+};
 #endif // _WIN32
 
 template <typename CharT, typename S> struct is_c_str_helper {
@@ -1609,10 +1627,15 @@ template <bool flag> struct first_row_is_header {
   constexpr static bool value = flag;
 };
 
-}
+} // namespace csv2
 #pragma once
 #include <cstring>
+#if __has_include("sys/mman.h") ||                                                                 \
+                  __has_include(                                                                   \
+                      <sys/mman.h>) || __has_include("windows.h") || __has_include(<windows.h>)
+#define __CSV2_HAS_MMAN_H__ 1
 // #include <csv2/mio.hpp>
+#endif
 // #include <csv2/parameters.hpp>
 #include <istream>
 #include <string>
@@ -1626,13 +1649,16 @@ template <class delimiter = delimiter<','>, class quote_character = quote_charac
           class first_row_is_header = first_row_is_header<true>,
           class trim_policy = trim_policy::trim_whitespace>
 class Reader {
-  mio::mmap_source mmap_;          // mmap source
-  const char *buffer_{nullptr};    // pointer to memory-mapped data
-  size_t buffer_size_{0};          // mapped length of buffer
-  size_t header_start_{0};         // start index of header (cache)
-  size_t header_end_{0};           // end index of header (cache)
+#if __CSV2_HAS_MMAN_H__
+  mio::mmap_source mmap_;       // mmap source
+#endif
+  const char *buffer_{nullptr}; // pointer to memory-mapped data
+  size_t buffer_size_{0};       // mapped length of buffer
+  size_t header_start_{0};      // start index of header (cache)
+  size_t header_end_{0};        // end index of header (cache)
 
 public:
+#if __CSV2_HAS_MMAN_H__
   // Use this if you'd like to mmap the CSV file
   template <typename StringType> bool mmap(StringType &&filename) {
     mmap_ = mio::mmap_source(filename);
@@ -1642,6 +1668,7 @@ public:
     buffer_size_ = mmap_.mapped_length();
     return true;
   }
+#endif
 
   // Use this if you have the CSV contents
   // in an std::string already
@@ -1676,14 +1703,14 @@ public:
     friend class CellIterator;
 
   public:
-  
-	// returns a view on the cell's contents if C++17 available
-	#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
-      std::string_view read_view() const {
+// returns a view on the cell's contents if C++17 available
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
+    std::string_view read_view() const {
       const auto new_start_end = trim_policy::trim(buffer_, start_, end_);
-      return std::string_view(buffer_ + new_start_end.first, new_start_end.second- new_start_end.first);
-      }
-	#endif
+      return std::string_view(buffer_ + new_start_end.first,
+                              new_start_end.second - new_start_end.first);
+    }
+#endif
     // Returns the raw_value of the cell without handling escaped
     // content, e.g., cell containing """foo""" will be returned
     // as is
@@ -1838,7 +1865,8 @@ public:
       return end();
     if (first_row_is_header::value) {
       const auto header_indices = header_indices_();
-      return RowIterator(buffer_, buffer_size_, header_indices.second  > 0 ? header_indices.second + 1 : 0);
+      return RowIterator(buffer_, buffer_size_,
+                         header_indices.second > 0 ? header_indices.second + 1 : 0);
     } else {
       return RowIterator(buffer_, buffer_size_, 0);
     }
@@ -1858,7 +1886,6 @@ private:
   }
 
 public:
-
   Row header() const {
     size_t start = 0, end = 0;
     Row result;
@@ -1892,43 +1919,60 @@ public:
   }
 };
 } // namespace csv2
+
 #pragma once
 #include <cstring>
 // #include <csv2/parameters.hpp>
 #include <fstream>
+#include <iostream>
+#include <iterator>
 #include <string>
 #include <utility>
-#include <iostream>
 
 namespace csv2 {
 
-template <class delimiter = delimiter<','>>
-class Writer {
-    std::ofstream& stream_;    // output stream for the writer
+template <typename, typename T> struct has_close : std::false_type {};
+
+template <typename C, typename Ret, typename... Args> struct has_close<C, Ret(Args...)> {
+private:
+  template <typename T>
+  static constexpr auto check(T *) ->
+      typename std::is_same<decltype(std::declval<T>().close(std::declval<Args>()...)), Ret>::type;
+
+  template <typename> static constexpr std::false_type check(...);
+
+  typedef decltype(check<C>(0)) type;
+
 public:
-    template <typename Stream>
-    Writer(Stream&& stream) : stream_(std::forward<Stream>(stream)) {}
-
-    ~Writer() {
-        stream_.close();
-    }
-
-    template <typename Container>
-    void write_row(Container&& row) {
-        const auto& strings = std::forward<Container>(row);
-        const auto delimiter_string = std::string(1, delimiter::value);
-        std::copy(strings.begin(), strings.end() - 1,
-            std::ostream_iterator<std::string>(stream_, delimiter_string.c_str()));
-        stream_ << strings.back() << "\n";
-    }
-
-    template <typename Container>
-    void write_rows(Container&& rows) {
-        const auto& container_of_rows = std::forward<Container>(rows);
-        for (const auto& row : container_of_rows) {
-            write_row(row);
-        }
-    }
+  static constexpr bool value = type::value;
 };
 
-}
+template <class delimiter = delimiter<','>, typename Stream = std::ofstream> class Writer {
+  Stream &stream_; // output stream for the writer
+public:
+  Writer(Stream &stream) : stream_(stream) {}
+
+  ~Writer() {
+    if constexpr (has_close<Stream, void()>::value) {
+      // has `close`
+      stream_.close();
+    }
+  }
+
+  template <typename Container> void write_row(Container &&row) {
+    const auto &strings = std::forward<Container>(row);
+    const auto delimiter_string = std::string(1, delimiter::value);
+    std::copy(strings.begin(), strings.end() - 1,
+              std::ostream_iterator<std::string>(stream_, delimiter_string.c_str()));
+    stream_ << strings.back() << "\n";
+  }
+
+  template <typename Container> void write_rows(Container &&rows) {
+    const auto &container_of_rows = std::forward<Container>(rows);
+    for (const auto &row : container_of_rows) {
+      write_row(row);
+    }
+  }
+};
+
+} // namespace csv2

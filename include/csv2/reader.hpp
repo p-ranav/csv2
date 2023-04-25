@@ -1,7 +1,10 @@
 
 #pragma once
 #include <cstring>
+#if __has_include("sys/mman.h") || __has_include(<sys/mman.h>) || __has_include("windows.h") || __has_include(<windows.h>)
+#define __CSV2_HAS_MMAN_H__ 1
 #include <csv2/mio.hpp>
+#endif
 #include <csv2/parameters.hpp>
 #include <istream>
 #include <string>
@@ -15,13 +18,16 @@ template <class delimiter = delimiter<','>, class quote_character = quote_charac
           class first_row_is_header = first_row_is_header<true>,
           class trim_policy = trim_policy::trim_whitespace>
 class Reader {
+  #if __CSV2_HAS_MMAN_H__
   mio::mmap_source mmap_;          // mmap source
+  #endif
   const char *buffer_{nullptr};    // pointer to memory-mapped data
   size_t buffer_size_{0};          // mapped length of buffer
   size_t header_start_{0};         // start index of header (cache)
   size_t header_end_{0};           // end index of header (cache)
 
 public:
+  #if __CSV2_HAS_MMAN_H__
   // Use this if you'd like to mmap the CSV file
   template <typename StringType> bool mmap(StringType &&filename) {
     mmap_ = mio::mmap_source(filename);
@@ -31,6 +37,7 @@ public:
     buffer_size_ = mmap_.mapped_length();
     return true;
   }
+  #endif
 
   // Use this if you have the CSV contents
   // in an std::string already

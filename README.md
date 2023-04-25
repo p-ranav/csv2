@@ -187,7 +187,7 @@ public:
 
 ```bash
 mkdir build && cd build
-cmake -DCSV2_TEST=ON ..
+cmake -DCSV2_BUILD_TESTS=ON ..
 make
 cd test
 ./csv2_test
