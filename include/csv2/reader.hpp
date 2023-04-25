@@ -47,6 +47,18 @@ public:
     return buffer_size_ > 0;
   }
 
+
+  // Use this if you already have the CSV contents
+  // in a std::string_view 
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
+  bool parse_view(std::string_view sv) {
+    buffer_ = sv.data();
+    buffer_size_ = sv.size();
+    return buffer_size_ > 0;
+  }
+#endif
+
+
   class RowIterator;
   class Row;
   class CellIterator;
@@ -104,6 +116,8 @@ public:
     friend class Reader;
 
   public:
+    // address of row
+    const char *address() const { return buffer_; }
 	// returns the char length of the row
 	size_t length() const { return end_ - start_; }
 
