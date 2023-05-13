@@ -20,10 +20,10 @@
 #include <csv2/reader.hpp>
 
 int main() {
-  csv2::Reader<delimiter<','>, 
-               quote_character<'"'>, 
-               first_row_is_header<true>,
-               trim_policy::trim_whitespace> csv;
+  csv2::Reader<csv2::delimiter<','>, 
+               csv2::quote_character<'"'>, 
+               csv2::first_row_is_header<true>,
+               csv2::trim_policy::trim_whitespace> csv;
                
   if (csv.mmap("foo.csv")) {
     const auto header = csv.header();
