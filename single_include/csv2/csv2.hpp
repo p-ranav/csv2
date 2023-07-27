@@ -1901,13 +1901,26 @@ public:
     return result;
   }
 
+  /**
+   * @returns The number of rows (excluding the header)
+  */
   size_t rows() const {
     size_t result{0};
     if (!buffer_ || buffer_size_ == 0)
       return result;
-    for (const char *p = buffer_;
-         (p = static_cast<const char *>(memchr(p, '\n', (buffer_ + buffer_size_) - p))); ++p)
+    
+    // Count the first row if not header
+    if (not first_row_is_header::value
+        and *(static_cast<const char*>(buffer_)) != '\r')
       ++result;
+
+    for (const char *p = buffer_
+        ; (p = static_cast<const char *>(memchr(p, '\n', (buffer_ + buffer_size_) - p)))
+        ; ++p) {
+      if (p < buffer_ + buffer_size_ - 1
+          and *(p + 1) != '\r')
+        ++result;
+    }
     return result;
   }
 
