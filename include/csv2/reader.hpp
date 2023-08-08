@@ -298,7 +298,8 @@ public:
 
   size_t cols() const {
     size_t result{0};
-    for (const auto cell : header())
+    const auto row = header();
+    for (auto cell = row.begin(); cell != row.end(); ++cell)
       result += 1;
     return result;
   }
