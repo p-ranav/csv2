@@ -163,6 +163,12 @@ public:
         return *this;
       }
 
+      CellIterator operator++(int) {
+        CellIterator current = *this;
+        ++(*this);
+        return current;
+      }
+
       Cell operator*() {
         bool escaped{false};
         class Cell cell;
@@ -203,6 +209,18 @@ public:
       }
 
       bool operator!=(const CellIterator &rhs) { return current_ != rhs.current_; }
+
+      // Proxy returned by operator-> so that icell->read_value(...) works.
+      class CellProxy {
+        Cell cell_;
+
+      public:
+        explicit CellProxy(Cell cell) : cell_(cell) {}
+        Cell *operator->() { return &cell_; }
+        const Cell *operator->() const { return &cell_; }
+      };
+
+      CellProxy operator->() { return CellProxy(**this); }
     };
 
     CellIterator begin() const { return CellIterator(buffer_, end_ - start_, start_, end_); }
@@ -245,7 +263,10 @@ public:
       return result;
     }
 
-    bool operator!=(const RowIterator &rhs) { return start_ != rhs.start_; }
+    // Once the final newline in the buffer has been consumed there is no
+    // trailing (phantom) row left to parse, even though start_ may still sit
+    // one past it; only genuine blank lines before that point count as rows.
+    bool operator!=(const RowIterator &) const { return start_ < buffer_size_; }
   };
 
   RowIterator begin() const {

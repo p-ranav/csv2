@@ -1,5 +1,6 @@
 #include "doctest.hpp"
 #include <csv2/reader.hpp>
+#include <cstdlib>
 #include <string>
 #include <vector>
 using namespace csv2;
@@ -284,7 +285,7 @@ TEST_CASE("Parse CSV with empty lines" * test_suite("Reader")) {
       REQUIRE(value == expected_cells[cells++]);
     }
   }
-  REQUIRE(rows == 9); // There are rows with empty cells
+  REQUIRE(rows == 8); // There are rows with empty cells; the lone trailing newline at EOF is not a row
 }
 
 TEST_CASE("Parse CSV with missing columns" * test_suite("Reader")) {
@@ -470,4 +471,37 @@ TEST_CASE("Parse CSV with an empty quoted field followed by more columns" * test
   }
   REQUIRE(rows == 1);
   REQUIRE(cells == expected_cells.size());
+}
+
+TEST_CASE("Parse a SCSV string with column headers and trailing newline, using iterator-based loop" *
+        test_suite("Reader")) {
+
+  Reader<delimiter<' '>, quote_character<'"'>, first_row_is_header<true>> csv;
+  const std::string buffer = "a b\nd 2 3\ne 5 6.7\n";
+
+  csv.parse(buffer);
+
+  const std::vector<std::string> expected_row_names{"d", "e"};
+  const std::vector<double> expected_cell_values{2, 3, 5, 6.7};
+
+  size_t rows=0, cells=0;
+  for (auto row : csv) {
+    auto icell = std::begin(row);
+    std::string rname;
+    icell->read_value(rname);
+    REQUIRE(rname == expected_row_names[rows]);
+    rows++;
+
+    icell++;
+    for (; icell != std::end(row); ++icell) {
+      std::string str;
+      icell->read_raw_value(str);
+      const double value = std::atof(str.c_str());
+      REQUIRE(value == expected_cell_values[cells]);
+      cells++;
+    }
+  }
+  size_t cols = cells / rows;
+  REQUIRE(rows == 2);
+  REQUIRE(cols == 2);
 }
