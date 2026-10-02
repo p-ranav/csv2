@@ -928,8 +928,23 @@ void basic_mmap<AccessMode, ByteT>::map(const handle_type handle, const size_typ
     return;
   }
 
-  const auto ctx = detail::memory_map(
-      handle, offset, length == map_entire_file ? (file_size - offset) : length, AccessMode, error);
+  const size_type length_to_map = length == map_entire_file ? (file_size - offset) : length;
+  if (length_to_map == 0) {
+    // Nothing to map (e.g. an empty file). Calling the OS-level mmap with a
+    // length of 0 is invalid on most platforms, so treat this as a valid,
+    // empty mapping instead of attempting the syscall.
+    unmap();
+    file_handle_ = handle;
+    is_handle_internal_ = false;
+    data_ = nullptr;
+    length_ = mapped_length_ = 0;
+#ifdef _WIN32
+    file_mapping_handle_ = invalid_handle;
+#endif
+    return;
+  }
+
+  const auto ctx = detail::memory_map(handle, offset, length_to_map, AccessMode, error);
   if (!error) {
     // We must unmap the previous mapping that may have existed prior to this call.
     // Note that this must only be invoked after a new mapping has been created in
@@ -1017,7 +1032,8 @@ template <access_mode AccessMode, typename ByteT> void basic_mmap<AccessMode, By
 template <access_mode AccessMode, typename ByteT>
 bool basic_mmap<AccessMode, ByteT>::is_mapped() const noexcept {
 #ifdef _WIN32
-  return file_mapping_handle_ != invalid_handle;
+  // An empty file is a valid, zero-length mapping with no file mapping handle.
+  return file_mapping_handle_ != invalid_handle || (is_open() && length_ == 0);
 #else // POSIX
   return is_open();
 #endif

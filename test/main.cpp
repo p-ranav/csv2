@@ -16,6 +16,25 @@ TEST_CASE("Parse an empty CSV" * test_suite("Reader")) {
   REQUIRE(exception_thrown);
 }
 
+TEST_CASE("Parse a CSV file that is empty (0 bytes)" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  bool exception_thrown{false};
+  bool mmap_result{false};
+  try {
+    mmap_result = csv.mmap("inputs/empty.csv");
+  } catch (std::exception &e) {
+    exception_thrown = true;
+  }
+  REQUIRE_FALSE(exception_thrown);
+  REQUIRE(mmap_result);
+  size_t row_count{0};
+  for (const auto row : csv) {
+    (void)row;
+    row_count += 1;
+  }
+  REQUIRE(row_count == 0);
+}
+
 TEST_CASE("Parse file that doesn't exist" * test_suite("Reader")) {
   Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
   bool exception_thrown{false};
