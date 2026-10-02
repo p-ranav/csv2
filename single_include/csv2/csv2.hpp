@@ -1787,6 +1787,7 @@ public:
         cell.end_ = end_;
 
         size_t last_quote_location = 0;
+        size_t first_quote_location = 0;
         bool quote_opened = false;
         for (auto i = current_; i < end_; i++) {
           current_ = i;
@@ -1802,23 +1803,29 @@ public:
                 // first quote for this cell
                 quote_opened = true;
                 last_quote_location = i;
+                first_quote_location = i;
               } else {
-                escaped = (last_quote_location == i - 1);
+                escaped = (last_quote_location == i - 1 &&
+                           last_quote_location != first_quote_location);
                 last_quote_location += (i - last_quote_location) * size_t(!escaped);
-                quote_opened = escaped || (buffer_[i + 1] != delimiter::value);
+                quote_opened = escaped || (i + 1 < end_ && buffer_[i + 1] == quote_character::value);
               }
             }
           }
         }
-        cell.end_ = current_ + 1;
+        cell.end_ = end_;
+        current_ = end_;
         return cell;
       }
 
       bool operator!=(const CellIterator &rhs) { return current_ != rhs.current_; }
     };
 
-    CellIterator begin() const { return CellIterator(buffer_, end_ - start_, start_, end_); }
-    CellIterator end() const { return CellIterator(buffer_, end_ - start_, end_, end_); }
+    CellIterator begin() const {
+      return start_ == end_ ? end() : CellIterator(buffer_, end_ - start_, start_, end_);
+    }
+    // Leave room for a final empty cell when the row ends with a delimiter.
+    CellIterator end() const { return CellIterator(buffer_, end_ - start_, end_ + 1, end_); }
   };
 
   class RowIterator {

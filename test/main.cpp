@@ -385,3 +385,30 @@ TEST_CASE("Parse the most basic of CSV buffers with double quotes with just deli
   REQUIRE(rows == 1);
   REQUIRE(cols == 6);
 }
+
+TEST_CASE("Parse empty cells and quoted empty cells" * test_suite("Reader")) {
+  const std::vector<std::pair<std::string, std::vector<std::string>>> cases{
+      {"1,", {"1", ""}},
+      {"1,,", {"1", "", ""}},
+      {",", {"", ""}},
+      {",1", {"", "1"}},
+      {"1,2", {"1", "2"}},
+      {"1,\"\",123", {"1", "\"\"", "123"}},
+      {"1, \"\" ,123", {"1", " \"\" ", "123"}},
+      {"1,\"\"", {"1", "\"\""}},
+      {"1,\"a\"\",b\",123", {"1", "\"a\"\",b\"", "123"}}};
+
+  for (const auto &test : cases) {
+    Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+    REQUIRE(csv.parse(test.first));
+    std::vector<std::string> values;
+    for (const auto row : csv) {
+      for (const auto cell : row) {
+        std::string value;
+        cell.read_raw_value(value);
+        values.push_back(value);
+      }
+    }
+    CHECK(values == test.second);
+  }
+}
