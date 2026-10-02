@@ -7,13 +7,7 @@ using doctest::test_suite;
 
 TEST_CASE("Parse an empty CSV" * test_suite("Reader")) {
   Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
-  bool exception_thrown{false};
-  try {
-    csv.mmap("input/empty.csv");
-  } catch (std::exception &e) {
-    exception_thrown = true;
-  }
-  REQUIRE(exception_thrown);
+  REQUIRE_FALSE(csv.mmap("input/empty.csv"));
 }
 
 TEST_CASE("Parse a CSV file that is empty (0 bytes)" * test_suite("Reader")) {
@@ -37,13 +31,7 @@ TEST_CASE("Parse a CSV file that is empty (0 bytes)" * test_suite("Reader")) {
 
 TEST_CASE("Parse file that doesn't exist" * test_suite("Reader")) {
   Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
-  bool exception_thrown{false};
-  try {
-    csv.mmap("input/missing.csv");
-  } catch (std::exception &e) {
-    exception_thrown = true;
-  }
-  REQUIRE(exception_thrown);
+  REQUIRE_FALSE(csv.mmap("input/missing.csv"));
 }
 
 TEST_CASE("Parse the most basic of CSV buffers" * test_suite("Reader")) {

@@ -1657,8 +1657,11 @@ public:
   #if __CSV2_HAS_MMAN_H__
   // Use this if you'd like to mmap the CSV file
   template <typename StringType> bool mmap(StringType &&filename) {
-    mmap_ = mio::mmap_source(filename);
-    if (!mmap_.is_open() || !mmap_.is_mapped())
+    // Use the non-throwing overload: the constructor-based API requires
+    // exceptions, which may be disabled (e.g. built with -fno-exceptions).
+    std::error_code error;
+    mmap_.map(filename, error);
+    if (error || !mmap_.is_open() || !mmap_.is_mapped())
       return false;
     buffer_ = mmap_.data();
     buffer_size_ = mmap_.mapped_length();
