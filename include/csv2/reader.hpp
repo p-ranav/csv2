@@ -12,6 +12,220 @@
 	#include <string_view>
 #endif
 
+// Optional SIMD acceleration for scanning cell content. Falls back to a plain
+// scalar loop on any platform/compiler where neither intrinsic set is
+// available, so this is always correct, just not always vectorized.
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64) || \
+    (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#define __CSV2_HAS_SSE2__ 1
+#include <emmintrin.h>
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#define __CSV2_HAS_NEON__ 1
+#include <arm_neon.h>
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define __CSV2_FORCE_INLINE__ inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define __CSV2_FORCE_INLINE__ __forceinline
+#else
+#define __CSV2_FORCE_INLINE__ inline
+#endif
+
+namespace csv2 {
+namespace detail {
+
+inline int count_trailing_zeros(unsigned int x) {
+#if defined(__GNUC__) || defined(__clang__)
+  return __builtin_ctz(x);
+#elif defined(_MSC_VER)
+  unsigned long index;
+  _BitScanForward(&index, x);
+  return static_cast<int>(index);
+#else
+  int n = 0;
+  while (!(x & 1u)) {
+    x >>= 1;
+    ++n;
+  }
+  return n;
+#endif
+}
+
+inline int count_trailing_zeros(unsigned long long x) {
+#if defined(__GNUC__) || defined(__clang__)
+  return __builtin_ctzll(x);
+#elif defined(_MSC_VER)
+  unsigned long index;
+  _BitScanForward64(&index, x);
+  return static_cast<int>(index);
+#else
+  int n = 0;
+  while (!(x & 1ull)) {
+    x >>= 1;
+    ++n;
+  }
+  return n;
+#endif
+}
+
+inline int popcount(unsigned long long x) {
+#if defined(__GNUC__) || defined(__clang__)
+  return __builtin_popcountll(x);
+#else
+  int n = 0;
+  while (x) {
+    x &= (x - 1);
+    ++n;
+  }
+  return n;
+#endif
+}
+
+// Returns the index (relative to buffer) of the first occurrence of `a` or
+// `b` within buffer[start, end), or `end` if neither appears. Scans 16 bytes
+// at a time with SSE2/NEON where available, otherwise falls back to a plain
+// byte-by-byte scan. Short spans (below one SIMD chunk, e.g. typical quoted
+// fields) skip vector setup entirely since it wouldn't pay for itself.
+__CSV2_FORCE_INLINE__ size_t find_first_of_two(const char *buffer, size_t start, size_t end,
+                                                char a, char b) {
+  size_t i = start;
+#if defined(__CSV2_HAS_SSE2__) || defined(__CSV2_HAS_NEON__)
+  if (end - start >= 16) {
+#endif
+#if defined(__CSV2_HAS_SSE2__)
+  const __m128i va = _mm_set1_epi8(a);
+  const __m128i vb = _mm_set1_epi8(b);
+  for (; i + 16 <= end; i += 16) {
+    const __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i *>(buffer + i));
+    const __m128i hit = _mm_or_si128(_mm_cmpeq_epi8(chunk, va), _mm_cmpeq_epi8(chunk, vb));
+    const int mask = _mm_movemask_epi8(hit);
+    if (mask)
+      return i + static_cast<size_t>(count_trailing_zeros(static_cast<unsigned int>(mask)));
+  }
+#elif defined(__CSV2_HAS_NEON__)
+  const uint8x16_t va = vdupq_n_u8(static_cast<uint8_t>(a));
+  const uint8x16_t vb = vdupq_n_u8(static_cast<uint8_t>(b));
+  for (; i + 16 <= end; i += 16) {
+    const uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t *>(buffer + i));
+    const uint8x16_t hit = vorrq_u8(vceqq_u8(chunk, va), vceqq_u8(chunk, vb));
+    const uint64_t lo = vgetq_lane_u64(vreinterpretq_u64_u8(hit), 0);
+    const uint64_t hi = vgetq_lane_u64(vreinterpretq_u64_u8(hit), 1);
+    if (lo)
+      return i + (static_cast<size_t>(count_trailing_zeros(static_cast<unsigned long long>(lo))) >> 3);
+    if (hi)
+      return i + 8 + (static_cast<size_t>(count_trailing_zeros(static_cast<unsigned long long>(hi))) >> 3);
+  }
+#endif
+#if defined(__CSV2_HAS_SSE2__) || defined(__CSV2_HAS_NEON__)
+  }
+#endif
+  for (; i < end; i++) {
+    if (buffer[i] == a || buffer[i] == b)
+      return i;
+  }
+  return end;
+}
+
+// Returns the number of occurrences of `needle` in buffer[start, end).
+// Used to cheaply check quote parity over a whole row in one bulk pass,
+// rather than repeatedly scanning between every individual quote.
+__CSV2_FORCE_INLINE__ size_t count_char(const char *buffer, size_t start, size_t end, char needle) {
+  size_t count = 0;
+  size_t i = start;
+#if defined(__CSV2_HAS_SSE2__) || defined(__CSV2_HAS_NEON__)
+  if (end - start >= 16) {
+#endif
+#if defined(__CSV2_HAS_SSE2__)
+  const __m128i vneedle = _mm_set1_epi8(needle);
+  for (; i + 16 <= end; i += 16) {
+    const __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i *>(buffer + i));
+    const __m128i eq = _mm_cmpeq_epi8(chunk, vneedle);
+    count += static_cast<size_t>(popcount(static_cast<unsigned int>(_mm_movemask_epi8(eq))));
+  }
+#elif defined(__CSV2_HAS_NEON__)
+  const uint8x16_t vneedle = vdupq_n_u8(static_cast<uint8_t>(needle));
+  for (; i + 16 <= end; i += 16) {
+    const uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t *>(buffer + i));
+    const uint8x16_t eq = vceqq_u8(chunk, vneedle);
+    const uint64_t lo = vgetq_lane_u64(vreinterpretq_u64_u8(eq), 0);
+    const uint64_t hi = vgetq_lane_u64(vreinterpretq_u64_u8(eq), 1);
+    // Each matching lane is a full 0xFF (8 set bits), so popcount/8 gives
+    // the number of matching lanes in that half.
+    count += (static_cast<size_t>(popcount(lo)) + static_cast<size_t>(popcount(hi))) / 8;
+  }
+#endif
+#if defined(__CSV2_HAS_SSE2__) || defined(__CSV2_HAS_NEON__)
+  }
+#endif
+  for (; i < end; i++) {
+    if (buffer[i] == needle)
+      ++count;
+  }
+  return count;
+}
+
+// Returns the index of the first '\n' in buffer[start, end) that is not
+// inside an (unescaped) quoted field, or `end` if there is none. A row must
+// not be split in the middle of a quoted field that spans multiple physical
+// lines, so RowIterator uses this instead of a plain memchr for '\n'.
+//
+// Fast path: find the next '\n' with a plain (single-needle) memchr, then
+// check in one bulk pass whether an even or odd number of quotes precede it
+// -- an odd count means that candidate falls inside an open quote. Escaped
+// "" pairs always contribute an even number of quotes, so this parity check
+// is correct without tracking escape state. This avoids repeatedly invoking
+// a two-needle scan at every quote boundary, which regresses heavily-quoted
+// data (gaps between quotes are often shorter than one SIMD chunk); the
+// careful fallback below only runs for a row that genuinely has a quoted
+// multi-line field.
+inline size_t find_unquoted_newline(const char *buffer, size_t start, size_t end, char quote) {
+  size_t search_from = start;
+  while (true) {
+    const char *ptr =
+        static_cast<const char *>(memchr(buffer + search_from, '\n', end - search_from));
+    if (!ptr)
+      return end;
+    const size_t candidate = static_cast<size_t>(ptr - buffer);
+    if (count_char(buffer, start, candidate, quote) % 2 == 0)
+      return candidate;
+    // Candidate falls inside an open quote: carefully scan forward to find
+    // where that quoted field actually closes, then resume the cheap search
+    // just past it.
+    bool quote_opened = true;
+    size_t i = candidate + 1;
+    while (i < end) {
+      if (buffer[i] != quote) {
+        ++i;
+        continue;
+      }
+      if (i + 1 < end && buffer[i + 1] == quote) {
+        i += 2; // escaped pair, stays open
+      } else {
+        quote_opened = false;
+        ++i;
+        break;
+      }
+    }
+    if (quote_opened) // ran off the end still inside an open quote
+      return end;
+    search_from = i;
+  }
+}
+
+// If the byte immediately before `end` is a '\r', returns end - 1 so that a
+// CRLF line ending (the terminator RFC4180 actually specifies) doesn't leave
+// a stray carriage return attached to the row's last cell. `start` bounds
+// the check so an empty row isn't underflowed.
+inline size_t trim_trailing_cr(const char *buffer, size_t start, size_t end) {
+  if (end > start && buffer[end - 1] == '\r')
+    return end - 1;
+  return end;
+}
+
+} // namespace detail
+} // namespace csv2
+
 namespace csv2 {
 
 template <class delimiter = delimiter<','>, class quote_character = quote_character<'"'>,
@@ -89,9 +303,7 @@ public:
     template <typename Container> void read_raw_value(Container &result) const {
       if (start_ >= end_)
         return;
-      result.reserve(end_ - start_);
-      for (size_t i = start_; i < end_; ++i)
-        result.push_back(buffer_[i]);
+      result.insert(result.end(), buffer_ + start_, buffer_ + end_);
     }
 
     // If cell is escaped, convert and return correct cell contents,
@@ -99,10 +311,8 @@ public:
     template <typename Container> void read_value(Container &result) const {
       if (start_ >= end_)
         return;
-      result.reserve(end_ - start_);
       const auto new_start_end = trim_policy::trim(buffer_, start_, end_);
-      for (size_t i = new_start_end.first; i < new_start_end.second; ++i)
-        result.push_back(buffer_[i]);
+      result.insert(result.end(), buffer_ + new_start_end.first, buffer_ + new_start_end.second);
       // An empty quoted field ("") has no content to escape and must resolve
       // to an empty value rather than a single leftover quote character.
       if (result.size() == 2 && result[0] == quote_character::value &&
@@ -135,9 +345,7 @@ public:
     template <typename Container> void read_raw_value(Container &result) const {
       if (start_ >= end_)
         return;
-      result.reserve(end_ - start_);
-      for (size_t i = start_; i < end_; ++i)
-        result.push_back(buffer_[i]);
+      result.insert(result.end(), buffer_ + start_, buffer_ + end_);
     }
 
     class CellIterator {
@@ -176,34 +384,50 @@ public:
         cell.start_ = current_;
         cell.end_ = end_;
 
-        bool quote_opened = false;
         size_t i = current_;
-        for (; i < end_; i++) {
-          if (buffer_[i] == delimiter::value && !quote_opened) {
-            // actual delimiter
-            // end of cell
+        while (i < end_) {
+          const char c = buffer_[i];
+          if (c == delimiter::value) {
+            // actual delimiter: end of cell
             cell.end_ = i;
             cell.escaped_ = escaped;
             next_ = i + 1;
             return cell;
-          } else if (buffer_[i] == quote_character::value) {
-            if (!quote_opened) {
-              // opening quote for this cell
-              quote_opened = true;
-            } else if (i + 1 < end_ && buffer_[i + 1] == quote_character::value) {
+          }
+          if (c != quote_character::value) {
+            // Plain content: jump ahead in bulk (vectorized where available)
+            // to the next delimiter or quote instead of inspecting every byte
+            // in between one at a time. Cheap to skip entirely when the very
+            // next byte is already special (e.g. quote-first fields), so this
+            // never costs anything on data that can't benefit from it.
+            i = detail::find_first_of_two(buffer_, i + 1, end_, delimiter::value,
+                                           quote_character::value);
+            continue;
+          }
+
+          // Opening quote: quoted fields are typically short, so a plain
+          // scalar scan (no function-call/vector-setup overhead) is used here
+          // instead of another vectorized search.
+          ++i;
+          for (; i < end_; i++) {
+            if (buffer_[i] != quote_character::value)
+              continue;
+            if (i + 1 < end_ && buffer_[i + 1] == quote_character::value) {
               // escaped quote ("") within the quoted field: skip the pair,
               // the field remains open
               escaped = true;
               i++;
             } else {
               // genuine closing quote
-              quote_opened = false;
+              ++i;
+              break;
             }
           }
         }
         // Reached the end of the row's content with no trailing delimiter found:
         // this is the last cell and no further (empty) cell follows.
         cell.end_ = i;
+        cell.escaped_ = escaped;
         next_ = end_ + 1;
         return cell;
       }
@@ -233,13 +457,15 @@ public:
     size_t buffer_size_;
     size_t start_;
     size_t end_;
+    size_t next_; // start of the next row; tracked separately from end_
+                  // since end_ may be trimmed of a trailing CRLF '\r'
 
   public:
     RowIterator(const char *buffer, size_t buffer_size, size_t start)
-        : buffer_(buffer), buffer_size_(buffer_size), start_(start), end_(start_) {}
+        : buffer_(buffer), buffer_size_(buffer_size), start_(start), end_(start_), next_(start_) {}
 
     RowIterator &operator++() {
-      start_ = end_ + 1;
+      start_ = next_;
       end_ = start_;
       return *this;
     }
@@ -250,15 +476,17 @@ public:
       result.start_ = start_;
       result.end_ = end_;
 
-      if (const char *ptr =
-              static_cast<const char *>(memchr(&buffer_[start_], '\n', (buffer_size_ - start_)))) {
-        end_ = start_ + (ptr - &buffer_[start_]);
+      const size_t newline_pos =
+          detail::find_unquoted_newline(buffer_, start_, buffer_size_, quote_character::value);
+      if (newline_pos < buffer_size_) {
+        end_ = detail::trim_trailing_cr(buffer_, start_, newline_pos);
         result.end_ = end_;
-        start_ = end_ + 1;
+        next_ = newline_pos + 1;
       } else {
         // last row
-        end_ = buffer_size_;
+        end_ = detail::trim_trailing_cr(buffer_, start_, buffer_size_);
         result.end_ = end_;
+        next_ = buffer_size_ + 1;
       }
       return result;
     }
@@ -283,13 +511,16 @@ public:
   RowIterator end() const { return RowIterator(buffer_, buffer_size_, buffer_size_ + 1); }
 
 private:
+  // Returns {0, position of the header's unquoted terminating newline} (or
+  // {0, 0} if there is none). The second value is the raw newline position,
+  // not CRLF-trimmed, since begin() uses it as-is to find where data rows
+  // start; header()'s own Row span is trimmed independently.
   std::pair<size_t, size_t> header_indices_() const {
     size_t start = 0, end = 0;
 
-    if (const char *ptr =
-            static_cast<const char *>(memchr(&buffer_[start], '\n', (buffer_size_ - start)))) {
-      end = start + (ptr - &buffer_[start]);
-    }
+    const size_t newline_pos = detail::find_unquoted_newline(buffer_, start, buffer_size_, quote_character::value);
+    if (newline_pos < buffer_size_)
+      end = newline_pos;
     return {start, end};
   }
 
@@ -302,9 +533,9 @@ public:
     result.start_ = start;
     result.end_ = end;
 
-    if (const char *ptr =
-            static_cast<const char *>(memchr(&buffer_[start], '\n', (buffer_size_ - start)))) {
-      end = start + (ptr - &buffer_[start]);
+    const size_t newline_pos = detail::find_unquoted_newline(buffer_, start, buffer_size_, quote_character::value);
+    if (newline_pos < buffer_size_) {
+      end = detail::trim_trailing_cr(buffer_, start, newline_pos);
       result.end_ = end;
     }
     return result;
@@ -324,14 +555,15 @@ public:
         or *(static_cast<const char*>(buffer_)) != '\r'))
       ++result;
 
-    for (const char *p = buffer_
-        ; (p = static_cast<const char *>(memchr(p, '\n', (buffer_ + buffer_size_) - p)))
-        ; ++p) {
-      if (ignore_empty_lines
-          and (p >= buffer_ + buffer_size_ - 1
-          or *(p + 1) == '\r'))
-        continue;
-      ++result;
+    for (size_t pos = 0; pos < buffer_size_;) {
+      const size_t newline_pos = detail::find_unquoted_newline(buffer_, pos, buffer_size_, quote_character::value);
+      if (newline_pos >= buffer_size_)
+        break;
+      if (not (ignore_empty_lines
+          and (newline_pos >= buffer_size_ - 1
+          or buffer_[newline_pos + 1] == '\r')))
+        ++result;
+      pos = newline_pos + 1;
     }
     return result;
   }

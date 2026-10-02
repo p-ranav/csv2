@@ -505,3 +505,106 @@ TEST_CASE("Parse a SCSV string with column headers and trailing newline, using i
   REQUIRE(rows == 2);
   REQUIRE(cols == 2);
 }
+
+TEST_CASE("Parse CSV with a real embedded newline inside a quoted field" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  csv.mmap("inputs/test_16_embedded_newline.csv");
+
+  const std::vector<std::string> expected_cells{"a", "b", "c", "1", "\"line1\nline2\"", "3",
+                                                 "4", "5", "6"};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_raw_value(value);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  REQUIRE(rows == 3);
+  REQUIRE(cells == expected_cells.size());
+}
+
+TEST_CASE("Parse CSV string with a real embedded newline inside a quoted field" *
+          test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  const std::string buffer = "a,b,c\n1,\"line1\nline2\",3\n4,5,6";
+  csv.parse(buffer);
+
+  size_t rows{0}, cells{0};
+  std::string embedded_cell;
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      cells += 1;
+      std::string value;
+      cell.read_raw_value(value);
+      if (value.find('\n') != std::string::npos)
+        embedded_cell = value;
+    }
+  }
+  REQUIRE(rows == 3);
+  REQUIRE(cells == 9);
+  REQUIRE(embedded_cell == "\"line1\nline2\"");
+}
+
+TEST_CASE("Parse CSV with CRLF line endings" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  csv.mmap("inputs/test_17_crlf.csv");
+
+  const std::vector<std::string> expected_cells{"a", "b", "c", "1", "2", "3", "4", "5", "6"};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value.find('\r') == std::string::npos);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  REQUIRE(rows == 3);
+  REQUIRE(cells == expected_cells.size());
+}
+
+TEST_CASE("Parse CSV header with CRLF line endings" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<true>> csv;
+  csv.mmap("inputs/test_17_crlf.csv");
+
+  std::string last_header_cell;
+  for (const auto cell : csv.header()) {
+    last_header_cell.clear();
+    cell.read_value(last_header_cell);
+  }
+  REQUIRE(last_header_cell == "c");
+
+  size_t rows{0};
+  for (auto row : csv) {
+    (void)row;
+    rows += 1;
+  }
+  REQUIRE(rows == 2);
+}
+
+TEST_CASE("Parse CSV string with CRLF line endings and no trailing newline" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  const std::string buffer = "a,b,c\r\n1,2,3\r\n4,5,6";
+  csv.parse(buffer);
+
+  const std::vector<std::string> expected_cells{"a", "b", "c", "1", "2", "3", "4", "5", "6"};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value.find('\r') == std::string::npos);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  REQUIRE(rows == 3);
+  REQUIRE(cells == expected_cells.size());
+}
