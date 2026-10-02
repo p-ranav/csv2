@@ -1764,14 +1764,19 @@ public:
       size_t start_;
       size_t current_;
       size_t end_;
+      size_t next_; // start of the next cell, or end_ + 1 once iteration is complete
 
     public:
       CellIterator(const char *buffer, size_t buffer_size, size_t start, size_t end)
-          : buffer_(buffer), buffer_size_(buffer_size), start_(start), current_(start_), end_(end) {
+          : buffer_(buffer), buffer_size_(buffer_size), start_(start), current_(start),
+            end_(end), next_(start) {
+        // An iterator with no content ahead of it (e.g. a blank row) has no cells.
+        if (start_ >= end_)
+          current_ = end_ + 1;
       }
 
       CellIterator &operator++() {
-        current_ += 1;
+        current_ = next_;
         return *this;
       }
 
@@ -1784,13 +1789,14 @@ public:
 
         size_t last_quote_location = 0;
         bool quote_opened = false;
-        for (auto i = current_; i < end_; i++) {
-          current_ = i;
+        size_t i = current_;
+        for (; i < end_; i++) {
           if (buffer_[i] == delimiter::value && !quote_opened) {
             // actual delimiter
             // end of cell
-            cell.end_ = current_;
+            cell.end_ = i;
             cell.escaped_ = escaped;
+            next_ = i + 1;
             return cell;
           } else {
             if (buffer_[i] == quote_character::value) {
@@ -1806,7 +1812,10 @@ public:
             }
           }
         }
-        cell.end_ = current_ + 1;
+        // Reached the end of the row's content with no trailing delimiter found:
+        // this is the last cell and no further (empty) cell follows.
+        cell.end_ = i;
+        next_ = end_ + 1;
         return cell;
       }
 

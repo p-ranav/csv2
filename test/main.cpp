@@ -319,6 +319,45 @@ TEST_CASE("Parse CSV with missing columns" * test_suite("Reader")) {
   REQUIRE(cols == 4);
 }
 
+TEST_CASE("Parse CSV with trailing empty column and no trailing newline" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  csv.mmap("inputs/trailing_empty_column_no_eol.csv");
+
+  const std::vector<std::string> expected_cells{"a", "b", "c", "d", "1", "2", "3", ""};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  REQUIRE(rows == 2);
+  REQUIRE(cells == expected_cells.size());
+}
+
+TEST_CASE("Parse CSV with trailing empty column followed by more rows" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
+  csv.mmap("inputs/trailing_empty_column_mid_file.csv");
+
+  const std::vector<std::string> expected_cells{"a", "b", "c", "d", "1", "2", "3", "",
+                                                 "5", "6", "7", "8"};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  REQUIRE(rows == 3);
+  REQUIRE(cells == expected_cells.size());
+}
+
 TEST_CASE("Parse the most basic of CSV buffers from string" * test_suite("Reader")) {
   Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<false>> csv;
   const std::string buffer = "a,b,c\n1,2,3\n4,5,6";
