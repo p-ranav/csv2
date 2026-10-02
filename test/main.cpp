@@ -431,3 +431,43 @@ TEST_CASE("Parse the most basic of CSV buffers with double quotes with just deli
   REQUIRE(rows == 1);
   REQUIRE(cols == 6);
 }
+
+TEST_CASE("Parse CSV where last row ends with a trailing delimiter" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<true>> csv;
+  const std::string buffer = "int,string\n1,";
+  csv.parse(buffer);
+
+  const std::vector<std::string> expected_cells{"1", ""};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  REQUIRE(rows == 1);
+  REQUIRE(cells == expected_cells.size());
+}
+
+TEST_CASE("Parse CSV with an empty quoted field followed by more columns" * test_suite("Reader")) {
+  Reader<delimiter<','>, quote_character<'"'>, first_row_is_header<true>> csv;
+  const std::string buffer = "int,string,int\n1,\"\",123";
+  csv.parse(buffer);
+
+  const std::vector<std::string> expected_cells{"1", "", "123"};
+
+  size_t rows{0}, cells{0};
+  for (auto row : csv) {
+    rows += 1;
+    for (auto cell : row) {
+      std::string value;
+      cell.read_value(value);
+      REQUIRE(value == expected_cells[cells++]);
+    }
+  }
+  REQUIRE(rows == 1);
+  REQUIRE(cells == expected_cells.size());
+}

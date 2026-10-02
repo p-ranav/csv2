@@ -1730,6 +1730,13 @@ public:
       const auto new_start_end = trim_policy::trim(buffer_, start_, end_);
       for (size_t i = new_start_end.first; i < new_start_end.second; ++i)
         result.push_back(buffer_[i]);
+      // An empty quoted field ("") has no content to escape and must resolve
+      // to an empty value rather than a single leftover quote character.
+      if (result.size() == 2 && result[0] == quote_character::value &&
+          result[1] == quote_character::value) {
+        result.clear();
+        return;
+      }
       for (size_t i = 1; i < result.size(); ++i) {
         if (result[i] == quote_character::value && result[i - 1] == quote_character::value) {
           result.erase(i - 1, 1);
@@ -1790,7 +1797,6 @@ public:
         cell.start_ = current_;
         cell.end_ = end_;
 
-        size_t last_quote_location = 0;
         bool quote_opened = false;
         size_t i = current_;
         for (; i < end_; i++) {
@@ -1801,17 +1807,18 @@ public:
             cell.escaped_ = escaped;
             next_ = i + 1;
             return cell;
-          } else {
-            if (buffer_[i] == quote_character::value) {
-              if (!quote_opened) {
-                // first quote for this cell
-                quote_opened = true;
-                last_quote_location = i;
-              } else {
-                escaped = (last_quote_location == i - 1);
-                last_quote_location += (i - last_quote_location) * size_t(!escaped);
-                quote_opened = escaped || (buffer_[i + 1] != delimiter::value);
-              }
+          } else if (buffer_[i] == quote_character::value) {
+            if (!quote_opened) {
+              // opening quote for this cell
+              quote_opened = true;
+            } else if (i + 1 < end_ && buffer_[i + 1] == quote_character::value) {
+              // escaped quote ("") within the quoted field: skip the pair,
+              // the field remains open
+              escaped = true;
+              i++;
+            } else {
+              // genuine closing quote
+              quote_opened = false;
             }
           }
         }
