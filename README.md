@@ -50,13 +50,13 @@ g++ -I../include -O3 -std=c++11 -o main main.cpp
 
 #### System Details
 
-| Type            | Value                                                                                                     |
-| --------------- | --------------------------------------------------------------------------------------------------------- |
-| Processor       | 11th Gen Intel(R) Core(TM) i9-11900KF @ 3.50GHz   3.50 GHz                                                |
-| Installed RAM   | 32.0 GB (31.9 GB usable)                                                                                  |
+| Type | Value |
+| ---- | ---- |
+| Processor       | 11th Gen Intel(R) Core(TM) i9-11900KF @ 3.50GHz   3.50 GHz |
+| Installed RAM   | 32.0 GB (31.9 GB usable) |
 | SSD             | [ADATA SX8200PNP](https://www.adata.com/upload/downloadfile/Datasheet_XPG%20SX8200%20Pro_EN_20181017.pdf) |
-| OS              | Ubuntu 20.04 LTS running on WSL in Windows 11                                                             |
-| C++ Compiler    | g++ (Ubuntu 10.3.0-1ubuntu1~20.04) 10.3.0                                                                 |
+| OS              | Ubuntu 20.04 LTS running on WSL in Windows 11 |
+| C++ Compiler    | g++ (Ubuntu 10.3.0-1ubuntu1~20.04) 10.3.0 |
 
 #### Results (as of 02 OCT 2026)
 
@@ -69,14 +69,6 @@ g++ -I../include -O3 -std=c++11 -o main main.cpp
 | [Used Cars Dataset](https://www.kaggle.com/austinreese/craigslist-carstrucks-data) | 1.4 GB | 426,881 | 26 | 11,098,906 | 0.683s |
 | [Title-Based Semantic Subject Indexing](https://www.kaggle.com/hsrobo/titlebased-semantic-subject-indexing) | 3.7 GB | 12,834,027 | 4 | 51,336,108 | 2.526s |
 | [Bitcoin tweets - 16M tweets](https://www.kaggle.com/alaix14/bitcoin-tweets-20160101-to-20190329) | 4 GB | 16,889,766 | 9 | 152,007,894 | 3.026s |
-
-| [DDoS Balanced Dataset](https://www.kaggle.com/devendra416/ddos-datasets) | 6.3 GB | 12,794,627 | 85 | 6.963s |
-
-| [Seattle Checkouts by Title](https://www.kaggle.com/city-of-seattle/seattle-checkouts-by-title) | 7.1 GB | 34,892,623 | 11 | 7.698s |
-
-| [SHA-1 password hash dump](https://www.kaggle.com/urvishramaiya/have-i-been-pwnd) | 11 GB | 2,62,974,241 | 2 | 10.775s |
-
-| [DOHUI NOH scaled_data](https://www.kaggle.com/seaa0612/scaled-data) | 16 GB | 496,782 | 3213 | 16.553s |
 
 ### Reader API
 
