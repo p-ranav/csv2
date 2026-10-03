@@ -52,11 +52,10 @@ g++ -I../include -O3 -std=c++11 -o main main.cpp
 
 | Type | Value |
 | ---- | ---- |
-| Processor       | 11th Gen Intel(R) Core(TM) i9-11900KF @ 3.50GHz   3.50 GHz |
-| Installed RAM   | 32.0 GB (31.9 GB usable) |
-| SSD             | [ADATA SX8200PNP](https://www.adata.com/upload/downloadfile/Datasheet_XPG%20SX8200%20Pro_EN_20181017.pdf) |
-| OS              | Ubuntu 20.04 LTS running on WSL in Windows 11 |
-| C++ Compiler    | g++ (Ubuntu 10.3.0-1ubuntu1~20.04) 10.3.0 |
+| Processor       | Apple M1 Pro (8-core or 10-core CPU) |
+| Installed RAM   | 16.0 GB |
+| OS              | MacOS Tahoe 26.6 (25G70) |
+| C++ Compiler    | Apple clang version 21.0.0 (clang-2100.3.34.2) |
 
 #### Results (as of 02 OCT 2026)
 
