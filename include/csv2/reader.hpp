@@ -491,10 +491,17 @@ public:
       return result;
     }
 
-    // Once the final newline in the buffer has been consumed there is no
-    // trailing (phantom) row left to parse, even though start_ may still sit
-    // one past it; only genuine blank lines before that point count as rows.
-    bool operator!=(const RowIterator &) const { return start_ < buffer_size_; }
+    bool operator==(const RowIterator &rhs) const {
+      // Advancing past a final newline reaches buffer_size_, while end()
+      // and a final row without a newline use buffer_size_ + 1. Both are EOF.
+      const size_t position = start_ < buffer_size_ ? start_ : buffer_size_;
+      const size_t rhs_position =
+          rhs.start_ < rhs.buffer_size_ ? rhs.start_ : rhs.buffer_size_;
+      return buffer_ == rhs.buffer_ && buffer_size_ == rhs.buffer_size_ &&
+             position == rhs_position;
+    }
+
+    bool operator!=(const RowIterator &rhs) const { return !(*this == rhs); }
   };
 
   RowIterator begin() const {
