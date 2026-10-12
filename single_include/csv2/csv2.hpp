@@ -2233,11 +2233,13 @@ public:
 
   template <typename Container> void write_row(Container &&row) {
     const auto &strings = std::forward<Container>(row);
-    for (auto it = strings.begin(); it != strings.end() - 1; ++it) {
-      write_field(*it);
-      stream_ << delimiter::value;
+    bool first = true;
+    for (const auto &field : strings) {
+      if (!first)
+        stream_ << delimiter::value;
+      write_field(field);
+      first = false;
     }
-    write_field(strings.back());
     stream_ << "\n";
   }
 

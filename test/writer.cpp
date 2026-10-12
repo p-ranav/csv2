@@ -5,6 +5,7 @@
 #include <csv2/writer.hpp>
 #endif
 #include <array>
+#include <list>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -68,4 +69,17 @@ TEST_CASE("Writer accepts existing string containers" * doctest::test_suite("Wri
   const std::vector<const char *> strings{"g,h", "i"};
   writer.write_row(strings);
   CHECK(stream.str() == "\"a,b\",c\nd,\"e\"\"f\"\n\"g,h\",i\n");
+}
+
+TEST_CASE("Writer writes an empty row as an empty line" * doctest::test_suite("Writer")) {
+  CHECK(write({}) == "\n");
+}
+
+TEST_CASE("Writer accepts containers without random access iterators" *
+          doctest::test_suite("Writer")) {
+  BufferStream stream;
+  csv2::Writer<csv2::delimiter<','>, BufferStream> writer(stream);
+  const std::list<std::string> list{"a", "b,c"};
+  writer.write_row(list);
+  CHECK(stream.str() == "a,\"b,c\"\n");
 }
